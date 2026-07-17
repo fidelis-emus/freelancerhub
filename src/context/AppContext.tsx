@@ -157,7 +157,22 @@ const INITIAL_CONFIG: AppConfig = {
     accountNumber: "0123456789",
     accountName: "FreelanceHub Africa Escrow Ltd"
   },
-  supportedBanks: ["GTBank", "Access Bank", "Zenith Bank", "UBA", "First Bank", "Kuda MFB", "Standard Bank", "KCB Bank", "Equity Bank"]
+  supportedBanks: ["GTBank", "Access Bank", "Zenith Bank", "UBA", "First Bank", "Kuda MFB", "Standard Bank", "KCB Bank", "Equity Bank"],
+  
+  platformFeeType: "percentage",
+  platformFeeFixedValue: 500,
+  platformFeePercentValue: 15,
+  taxEnabled: true,
+  taxType: "percentage",
+  taxValue: 7.5,
+  apkVersion: "2.1.0",
+  apkSize: "18.4 MB",
+  apkReleaseNotes: "Initial stable Android APK build release. Fixed push notifications sync, added native camera upload support, and optimized real-time escrow chat updates.",
+  apkDownloadUrl: "#",
+  bankAccounts: [
+    { id: "ba-1", bankName: "Guaranty Trust Bank (GTBank)", accountNumber: "0123456789", accountName: "FreelanceHub Africa Escrow Ltd" },
+    { id: "ba-2", bankName: "Access Bank", accountNumber: "9876543210", accountName: "FreelanceHub Africa Operations" }
+  ]
 };
 
 // Initial African freelancers
@@ -186,7 +201,7 @@ export const INITIAL_FREELANCERS: User[] = [
     languagesSpoken: ["English", "Yoruba", "Igbo"],
     rating: 4.9,
     ratingCount: 37,
-    price: 4500, // Hourly NGN
+    price: 9000, // base price
     walletBalance: 24500,
     pendingBalance: 12000,
     workingHours: "07:00 - 21:00",
@@ -195,6 +210,12 @@ export const INITIAL_FREELANCERS: User[] = [
     portfolio: [
       { id: "p-1-1", title: "Residential Borehole Digging", imageUrl: "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=400&fit=crop&q=80", description: "Completed an 80ft deep-water borehole excavation with automatic treatment pumps in Magodo." },
       { id: "p-1-2", title: "Luxury Bath Fittings Setup", imageUrl: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&fit=crop&q=80", description: "Installed sleek black matte sanitary fixtures and thermostatic shower valves." }
+    ],
+    servicesList: [
+      { id: "srv-1-1", name: "Kitchen Pipe Burst Repair", category: "Plumbers", description: "Urgent: Complete repair of burst pipeline, water leak detection and sealing under kitchen cabinets.", price: 9000, estimatedTime: "2 Hours" },
+      { id: "srv-1-2", name: "Water Mains Leak Detection", category: "Water Treatment Experts", description: "Professional electronic detection of underground leaks with precision excavation and seal.", price: 15000, estimatedTime: "3 Hours" },
+      { id: "srv-1-3", name: "Bathroom Shower Fixtures Setup", category: "Plumbers", description: "Premium bathroom plumbing installation of faucets, thermostatic valves, and drains.", price: 25000, estimatedTime: "4 Hours" },
+      { id: "srv-1-4", name: "Residential Borehole Digging", category: "Borehole Experts", description: "Full scale 80ft deep-water borehole excavation with high-grade submersible pumps.", price: 350000, estimatedTime: "3 Days" }
     ]
   },
   {
@@ -221,7 +242,7 @@ export const INITIAL_FREELANCERS: User[] = [
     languagesSpoken: ["English", "Swahili"],
     rating: 4.8,
     ratingCount: 52,
-    price: 15000, // NGN equivalent or local KES
+    price: 350000, // base price
     walletBalance: 180000,
     pendingBalance: 45000,
     workingHours: "09:00 - 18:00",
@@ -229,6 +250,11 @@ export const INITIAL_FREELANCERS: User[] = [
     certificates: ["B.Sc Computer Science - University of Nairobi", "Google Mobile Developer Professional Cert"],
     portfolio: [
       { id: "p-2-1", title: "E-Commerce App (Flutter)", imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&fit=crop&q=80", description: "Created an online market platform with local mobile money (M-Pesa) checkout." }
+    ],
+    servicesList: [
+      { id: "srv-2-1", name: "Custom Mobile App Development (MVP)", category: "Mobile App Developers", description: "Full React Native / Flutter cross-platform app (Android & iOS) with login, database and real-time push notifications.", price: 450000, estimatedTime: "14 Days" },
+      { id: "srv-2-2", name: "Full-Stack Web App Development", category: "Website Developers", description: "Complete custom dashboard and CRM web application using React, Tailwind and Node.js backend.", price: 350000, estimatedTime: "10 Days" },
+      { id: "srv-2-3", name: "Payment Gateway Integration", category: "Software Developers", description: "Add secure payment gateway support (Paystack, Flutterwave, Stripe) to your existing app with webhooks.", price: 60000, estimatedTime: "2 Days" }
     ]
   },
   {
@@ -255,13 +281,18 @@ export const INITIAL_FREELANCERS: User[] = [
     languagesSpoken: ["English", "Twi", "Ga"],
     rating: 4.6,
     ratingCount: 19,
-    price: 3500,
+    price: 3500, // base price
     walletBalance: 0,
     pendingBalance: 0,
     workingHours: "08:00 - 18:00",
     availability: "available",
     certificates: ["Energy Commission Ghana - Electrician License Class A", "Ubiquiti UniFi Networking Professional"],
-    portfolio: []
+    portfolio: [],
+    servicesList: [
+      { id: "srv-3-1", name: "Socket & Switch Installation", category: "Electricians", description: "Installation or replacement of electrical wall sockets, dimmer switches and neat conduit wiring.", price: 3500, estimatedTime: "1 Hour" },
+      { id: "srv-3-2", name: "Popping POP Lighting Wiring", category: "Electricians", description: "Decorative LED strip lighting and spot light wiring on POP ceilings.", price: 12000, estimatedTime: "3 Hours" },
+      { id: "srv-3-3", name: "Smart CCTV Camera Setup", category: "CCTV Installers", description: "Deployment of 4-channel outdoor IP CCTV cameras with remote mobile app viewing setup.", price: 45000, estimatedTime: "5 Hours" }
+    ]
   },
   {
     id: "f-4",
@@ -287,13 +318,17 @@ export const INITIAL_FREELANCERS: User[] = [
     languagesSpoken: ["English", "Yoruba"],
     rating: 5.0,
     ratingCount: 142,
-    price: 5000,
+    price: 12000, // base price
     walletBalance: 42000,
     pendingBalance: 0,
     workingHours: "05:00 - 23:00",
     availability: "available",
     certificates: ["Lagos State Drivers Institute (LASDRI) ID 993", "Professional VIP Defensive Driving Cert"],
-    portfolio: []
+    portfolio: [],
+    servicesList: [
+      { id: "srv-4-1", name: "Lekki to Airport VIP Chauffeur Transfer", category: "Chauffeurs", description: "Premium air-conditioned direct transfer from Lekki Phase 1 to Muritala Muhammed Airport Lagos.", price: 12000, estimatedTime: "1.5 Hours" },
+      { id: "srv-4-2", name: "Full-Day Corporate Chauffeur Hire", category: "Chauffeurs", description: "Dedicated VIP car and professional driver service for corporate errands within Lagos.", price: 35000, estimatedTime: "8 Hours" }
+    ]
   },
   {
     id: "f-5",
@@ -319,15 +354,19 @@ export const INITIAL_FREELANCERS: User[] = [
     languagesSpoken: ["English", "Zulu", "Xhosa"],
     rating: 4.7,
     ratingCount: 29,
-    price: 3000,
+    price: 15000, // base price
     walletBalance: 15500,
     pendingBalance: 6000,
     workingHours: "08:00 - 17:00",
     availability: "available",
     certificates: ["SABS Cleaning Safety Protocol Cert", "EcoClean Green Chemical Training Seal"],
-    portfolio: []
+    portfolio: [],
+    servicesList: [
+      { id: "srv-5-1", name: "Deep Home Cleaning & Fumigation", category: "Home Cleaning", description: "Deep steam cleaning of carpets, window panes, cupboards and comprehensive chemical fumigation.", price: 15000, estimatedTime: "4 Hours" },
+      { id: "srv-5-2", name: "Standard Office Hygiene Maintenance", category: "Office Cleaning", description: "Eco-friendly dusting, waste evacuation, sanitizing desks and floors for sandton corporate spaces.", price: 25000, estimatedTime: "6 Hours" }
+    ]
   }
-];
+];;
 
 export const INITIAL_CUSTOMERS: User[] = [
   {
@@ -809,7 +848,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Transfer money to Freelancer
       const freelancerId = b.freelancerId;
       const amount = b.price;
-      const fee = Math.floor(amount * (config.platformCommission / 100));
+      
+      // Dynamic Fee Calculation
+      let fee = 0;
+      const feeType = config.platformFeeType || "percentage";
+      if (feeType === "fixed") {
+        fee = config.platformFeeFixedValue || 500;
+      } else if (feeType === "percentage") {
+        fee = Math.floor(amount * ((config.platformFeePercentValue || 15) / 100));
+      } else if (feeType === "hybrid") {
+        fee = (config.platformFeeFixedValue || 500) + Math.floor(amount * ((config.platformFeePercentValue || 15) / 100));
+      }
+      
+      // Ensure fee never exceeds the total amount
+      if (fee > amount) fee = amount;
       const payout = amount - fee;
 
       // Update Freelancer Wallet balance
@@ -832,7 +884,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         amount: payout,
         status: "completed",
         timestamp: new Date().toISOString(),
-        description: `Escrow release payout (Platform Fee -${config.platformCommission}% deducted)`,
+        description: `Escrow release payout (Platform Fee -₦${fee.toLocaleString()} deducted)`,
         reference: `PAY-${Date.now().toString().slice(-6)}`
       };
       setTransactions(txs => [trans, ...txs]);

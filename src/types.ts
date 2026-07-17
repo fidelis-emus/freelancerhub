@@ -7,6 +7,16 @@ export interface PortfolioItem {
   description: string;
 }
 
+export interface ServicePackage {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  estimatedTime: string;
+  images?: string[];
+}
+
 export interface User {
   id: string;
   role: UserRole;
@@ -36,10 +46,11 @@ export interface User {
   rating: number;
   ratingCount: number;
   portfolio?: PortfolioItem[];
+  servicesList?: ServicePackage[]; // Custom service packages list
   certificates?: string[];
   workingHours?: string; // e.g. "08:00 - 17:00"
   availability?: "available" | "busy" | "offline";
-  price?: number; // base hourly/flat rate
+  price?: number; // base flat rate
   
   // Financial info
   walletBalance: number;
@@ -160,6 +171,23 @@ export interface AppConfig {
     accountName: string;
   };
   supportedBanks: string[];
+  
+  // Custom enhanced configs
+  platformFeeType?: "fixed" | "percentage" | "hybrid";
+  platformFeeFixedValue?: number;
+  platformFeePercentValue?: number;
+  taxEnabled?: boolean;
+  taxType?: "percentage" | "fixed";
+  taxValue?: number;
+  
+  // Simulated App Uploads
+  apkVersion?: string;
+  apkSize?: string;
+  apkReleaseNotes?: string;
+  apkDownloadUrl?: string;
+  
+  // Multi-Bank Accounts list
+  bankAccounts?: { id: string; bankName: string; accountNumber: string; accountName: string }[];
 }
 
 export interface Transaction {

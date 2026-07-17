@@ -1735,7 +1735,7 @@ export const MobileSimulator: React.FC = () => {
                             </div>
 
                             {/* Simulated Quick Media Actions for Freelancer */}
-                            <div className="bg-slate-100 border-t border-b border-slate-200/40 px-3 py-1 flex items-center justify-around text-slate-400 shrink-0">
+                            <div className="hidden bg-slate-100 border-t border-b border-slate-200/40 px-3 py-1 flex items-center justify-around text-slate-400 shrink-0">
                               <button onClick={() => handleSendSimulatedMedia("image")} className="hover:text-emerald-600 p-1 rounded text-[10px] flex items-center space-x-1 transition">
                                 <ImageIcon className="w-3.5 h-3.5" />
                                 <span className="text-[8px] font-medium">Send Photo</span>
