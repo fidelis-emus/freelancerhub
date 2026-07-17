@@ -1,0 +1,6 @@
+{
+  "name": "FreelanceHub Africa",
+  "description": "An elite full-stack double-sided mobile freelancer marketplace and administrative CMS console, powered securely by Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
