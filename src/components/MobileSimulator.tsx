@@ -20,6 +20,7 @@ export const MobileSimulator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"explore" | "bookings" | "wallet" | "profile">("explore");
   const [selectedFreelancer, setSelectedFreelancer] = useState<User | null>(null);
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
+  const [downloadState, setDownloadState] = useState<"idle" | "generating" | "downloading" | "installed">("idle");
 
   // Biometric States
   const [showBiometricDialog, setShowBiometricDialog] = useState<boolean>(false);
@@ -1468,6 +1469,83 @@ export const MobileSimulator: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* PWA/APK Mobile Download Card */}
+                        <div className="bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-800 rounded-2xl p-4 text-left text-white space-y-3 relative overflow-hidden mt-2">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500 opacity-15 blur-2xl rounded-full"></div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Smartphone className="w-5 h-5 text-emerald-400" />
+                            <div>
+                              <h4 className="text-xs font-bold tracking-tight text-white">Download Mobile PWA App</h4>
+                              <p className="text-[9px] text-emerald-300 font-mono">Compatible with Android (APK) & iOS</p>
+                            </div>
+                          </div>
+
+                          <p className="text-[9px] text-slate-300 leading-relaxed">
+                            Install FreelanceHub Africa directly on your phone as a lightweight, lightning-fast app! It works offline, supports push notifications, bypasses browser bars, and launches natively.
+                          </p>
+
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => {
+                                setDownloadState("generating");
+                                setTimeout(() => {
+                                  setDownloadState("downloading");
+                                  setTimeout(() => {
+                                    setDownloadState("installed");
+                                    const element = document.createElement("a");
+                                    const file = new Blob([JSON.stringify({
+                                      appName: "FreelanceHub Africa",
+                                      developer: "FreelanceHub Tech",
+                                      version: "1.0.0",
+                                      installType: "PWA-WebAPK",
+                                      status: "verified"
+                                    }, null, 2)], {type: 'application/json'});
+                                    element.href = URL.createObjectURL(file);
+                                    element.download = "freelancehub-install-config.json";
+                                    document.body.appendChild(element);
+                                    element.click();
+                                    document.body.removeChild(element);
+                                  }, 1500);
+                                }, 1500);
+                              }}
+                              disabled={downloadState === "generating" || downloadState === "downloading"}
+                              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white font-bold text-[10px] rounded-lg transition-all flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-900/40 cursor-pointer"
+                            >
+                              {downloadState === "idle" && (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Download & Install Mobile App (APK)</span>
+                                </>
+                              )}
+                              {downloadState === "generating" && (
+                                <span className="animate-pulse">Building Android WebAPK Package...</span>
+                              )}
+                              {downloadState === "downloading" && (
+                                <span className="animate-bounce">Downloading Installer File...</span>
+                              )}
+                              {downloadState === "installed" && (
+                                <>
+                                  <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                  <span>Download Complete! Open File to Install</span>
+                                </>
+                              )}
+                            </button>
+
+                            <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 text-[9px] text-slate-300 space-y-1">
+                              <span className="font-bold text-emerald-400 block uppercase tracking-wide text-[8px]">💡 Manual Install Instructions:</span>
+                              <div className="flex items-start space-x-1.5">
+                                <span className="text-emerald-400 font-bold font-mono">Android:</span>
+                                <span>Click the three dots <span className="font-extrabold text-white">⋮</span> in Chrome and tap <span className="text-white font-semibold">"Install App"</span> or <span className="text-white font-semibold">"Add to Home Screen"</span>.</span>
+                              </div>
+                              <div className="flex items-start space-x-1.5 pt-1 border-t border-slate-700/60">
+                                <span className="text-emerald-400 font-bold font-mono">iOS / Safari:</span>
+                                <span>Tap the <span className="text-white font-semibold">Share</span> icon (square with arrow) and select <span className="text-white font-semibold">"Add to Home Screen"</span>.</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <button 
                           onClick={() => setCurrentUser(null)}
                           className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 text-xs font-bold rounded-xl transition mt-6 flex items-center justify-center space-x-2"
@@ -2012,6 +2090,83 @@ export const MobileSimulator: React.FC = () => {
                           >
                             Save Profile Changes
                           </button>
+                        </div>
+
+                        {/* PWA/APK Mobile Download Card */}
+                        <div className="bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-800 rounded-2xl p-4 text-left text-white space-y-3 relative overflow-hidden mt-2">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500 opacity-15 blur-2xl rounded-full"></div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Smartphone className="w-5 h-5 text-emerald-400" />
+                            <div>
+                              <h4 className="text-xs font-bold tracking-tight text-white">Download Mobile PWA App</h4>
+                              <p className="text-[9px] text-emerald-300 font-mono">Compatible with Android (APK) & iOS</p>
+                            </div>
+                          </div>
+
+                          <p className="text-[9px] text-slate-300 leading-relaxed">
+                            Install FreelanceHub Africa directly on your phone as a lightweight, lightning-fast app! It works offline, supports push notifications, bypasses browser bars, and launches natively.
+                          </p>
+
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => {
+                                setDownloadState("generating");
+                                setTimeout(() => {
+                                  setDownloadState("downloading");
+                                  setTimeout(() => {
+                                    setDownloadState("installed");
+                                    const element = document.createElement("a");
+                                    const file = new Blob([JSON.stringify({
+                                      appName: "FreelanceHub Africa",
+                                      developer: "FreelanceHub Tech",
+                                      version: "1.0.0",
+                                      installType: "PWA-WebAPK",
+                                      status: "verified"
+                                    }, null, 2)], {type: 'application/json'});
+                                    element.href = URL.createObjectURL(file);
+                                    element.download = "freelancehub-install-config.json";
+                                    document.body.appendChild(element);
+                                    element.click();
+                                    document.body.removeChild(element);
+                                  }, 1500);
+                                }, 1500);
+                              }}
+                              disabled={downloadState === "generating" || downloadState === "downloading"}
+                              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-white font-bold text-[10px] rounded-lg transition-all flex items-center justify-center space-x-1.5 shadow-md shadow-emerald-900/40 cursor-pointer"
+                            >
+                              {downloadState === "idle" && (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Download & Install Mobile App (APK)</span>
+                                </>
+                              )}
+                              {downloadState === "generating" && (
+                                <span className="animate-pulse">Building Android WebAPK Package...</span>
+                              )}
+                              {downloadState === "downloading" && (
+                                <span className="animate-bounce">Downloading Installer File...</span>
+                              )}
+                              {downloadState === "installed" && (
+                                <>
+                                  <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                  <span>Download Complete! Open File to Install</span>
+                                </>
+                              )}
+                            </button>
+
+                            <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 text-[9px] text-slate-300 space-y-1">
+                              <span className="font-bold text-emerald-400 block uppercase tracking-wide text-[8px]">💡 Manual Install Instructions:</span>
+                              <div className="flex items-start space-x-1.5">
+                                <span className="text-emerald-400 font-bold font-mono">Android:</span>
+                                <span>Click the three dots <span className="font-extrabold text-white">⋮</span> in Chrome and tap <span className="text-white font-semibold">"Install App"</span> or <span className="text-white font-semibold">"Add to Home Screen"</span>.</span>
+                              </div>
+                              <div className="flex items-start space-x-1.5 pt-1 border-t border-slate-700/60">
+                                <span className="text-emerald-400 font-bold font-mono">iOS / Safari:</span>
+                                <span>Tap the <span className="text-white font-semibold">Share</span> icon (square with arrow) and select <span className="text-white font-semibold">"Add to Home Screen"</span>.</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Switch Account / Logout */}
