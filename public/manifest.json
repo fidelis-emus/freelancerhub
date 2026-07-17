@@ -1,0 +1,23 @@
+{
+  "name": "FreelanceHub Africa",
+  "short_name": "FreelanceHub",
+  "description": "An elite mobile freelancer marketplace and administrative CMS console.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/512/freelance.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://img.icons8.com/color/192/freelance.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
