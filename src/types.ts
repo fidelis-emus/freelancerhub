@@ -188,6 +188,19 @@ export interface AppConfig {
   
   // Multi-Bank Accounts list
   bankAccounts?: { id: string; bankName: string; accountNumber: string; accountName: string }[];
+
+  // Custom Slideshow & Marquee
+  slideshowTransitionInterval?: number;
+  slideshowTransitionEffect?: "fade" | "slide" | "zoom";
+  scrollingMarqueeSpeed?: number;
+  featuredCategoriesCount?: number;
+  heroSlides?: { id: string; title: string; subtitle: string; imageUrl: string; active: boolean; displayOrder: number }[];
+  categoryDetails?: { [catId: string]: { imageUrl: string; tagline: string; active: boolean; displayOrder: number } };
+  promotionalBanners?: { id: string; title: string; description: string; imageUrl: string; active: boolean; scheduledStart?: string; scheduledEnd?: string }[];
+  
+  // App Distribution Statistics
+  apkDownloadsCount?: number;
+  apkInstallsCount?: number;
 }
 
 export interface Transaction {

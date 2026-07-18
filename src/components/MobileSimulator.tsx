@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 export const MobileSimulator: React.FC = () => {
   const { 
-    currentUser, setCurrentUser, freelancers, categories, bookings, createBooking, 
+    currentUser, setCurrentUser, freelancers, customers, categories, bookings, createBooking, 
     updateBookingStatus, advanceBookingStep, addChatMessage, releaseEscrow, 
     addRating, depositFunds, withdrawFunds, config, userRole, setUserRole, registerUser,
     language, setLanguage, updateFreelancerKYC
@@ -170,6 +170,18 @@ export const MobileSimulator: React.FC = () => {
   // Dialog States
   const [showCallScreen, setShowCallScreen] = useState<{ active: boolean; type: "voice" | "video"; partnerName: string } | null>(null);
   const [showBookingDialog, setShowBookingDialog] = useState<boolean>(false);
+  const [checkoutStage, setCheckoutStage] = useState<"details" | "checkout">("details");
+  const [mobileSlideIndex, setMobileSlideIndex] = useState<number>(0);
+  
+  // Auto-slide effect for mobile homepage slideshow
+  useEffect(() => {
+    const totalSlides = config.heroSlides?.filter(s => s.active).length || 5;
+    const interval = setInterval(() => {
+      setMobileSlideIndex(prev => (prev + 1) % totalSlides);
+    }, config.slideshowTransitionInterval || 4000);
+    return () => clearInterval(interval);
+  }, [config.heroSlides, config.slideshowTransitionInterval]);
+
   const [showAIAssistant, setShowAIAssistant] = useState<boolean>(false);
   const [aiRequirementsPrompt, setAiRequirementsPrompt] = useState<string>("");
   const [aiLoading, setAiLoading] = useState<boolean>(false);
@@ -291,6 +303,8 @@ export const MobileSimulator: React.FC = () => {
 
   // Profile Edit / KYC submission states
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
+  const [loginEmail, setLoginEmail] = useState<string>("");
+  const [loginError, setLoginError] = useState<string>("");
   const [registerForm, setRegisterForm] = useState({
     firstName: "",
     lastName: "",
@@ -380,7 +394,35 @@ export const MobileSimulator: React.FC = () => {
   const handleConfirmBooking = () => {
     if (!selectedFreelancer) return;
     
-    const priceCalculated = selectedFreelancer.price * (bookingType === "emergency" ? 1.5 : 1);
+    const basePrice = selectedFreelancer.price || 0;
+    const emergencyLevy = bookingType === "emergency" ? Math.floor(basePrice * 0.5) : 0;
+    const subtotal = basePrice + emergencyLevy;
+
+    // Platform Fee
+    let platformFee = 0;
+    const feeType = config.platformFeeType || "percentage";
+    if (feeType === "fixed") {
+      platformFee = config.platformFeeFixedValue !== undefined ? config.platformFeeFixedValue : 500;
+    } else if (feeType === "percentage") {
+      platformFee = Math.floor(subtotal * ((config.platformFeePercentValue !== undefined ? config.platformFeePercentValue : 15) / 100));
+    } else if (feeType === "hybrid") {
+      const fixed = config.platformFeeFixedValue !== undefined ? config.platformFeeFixedValue : 500;
+      const percent = Math.floor(subtotal * ((config.platformFeePercentValue !== undefined ? config.platformFeePercentValue : 15) / 100));
+      platformFee = fixed + percent;
+    }
+
+    // Tax
+    let taxAmount = 0;
+    if (config.taxEnabled) {
+      const taxType = config.taxType || "percentage";
+      if (taxType === "fixed") {
+        taxAmount = config.taxValue !== undefined ? config.taxValue : 100;
+      } else {
+        taxAmount = Math.floor(subtotal * ((config.taxValue !== undefined ? config.taxValue : 5) / 100));
+      }
+    }
+
+    const priceCalculated = subtotal + platformFee + taxAmount;
     
     // Check wallet balance
     if (currentUser && currentUser.walletBalance < priceCalculated) {
@@ -506,6 +548,30 @@ export const MobileSimulator: React.FC = () => {
     setWalletMessage(null);
   };
 
+  // Real Email Authentication Login handler
+  const handleEmailLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    const emailToFind = loginEmail.trim().toLowerCase();
+    
+    if (!emailToFind) {
+      setLoginError("Please enter your email address.");
+      return;
+    }
+    
+    // Find in either freelancers or customers
+    const foundFreelancer = freelancers.find(f => f.email.toLowerCase() === emailToFind);
+    const foundCustomer = customers.find(c => c.email.toLowerCase() === emailToFind);
+    
+    const matchedUser = foundFreelancer || foundCustomer;
+    if (matchedUser) {
+      handleQuickLogin(matchedUser);
+      setLoginEmail("");
+    } else {
+      setLoginError("No account found with this email. Please register first!");
+    }
+  };
+
   // Handle registration
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -629,86 +695,114 @@ export const MobileSimulator: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Visual Divider */}
-                  <div className="hidden relative py-2 flex items-center justify-center">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-slate-100"></div>
-                    </div>
-                    <span className="relative px-3 bg-white text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                      Or Demo with Active Accounts
-                    </span>
-                  </div>
-
-                  {/* Biometric Quick Login Area */}
-                  <div className="hidden space-y-2.5 text-left">
+                  {/* Real Email Access Login Form */}
+                  <form onSubmit={handleEmailLogin} className="space-y-3 pt-4 border-t border-slate-100 text-left">
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 px-1">
-                      <span>Passkey & Fingerprint</span>
-                      <Fingerprint className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                      <span>Access Existing Account</span>
                     </div>
-                    
-                    {/* Customer Login Row with Biometrics */}
-                    <div className="relative">
-                      <button 
-                        onClick={() => handleQuickLogin(INITIAL_CUSTOMERS[0])}
-                        className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left"
-                      >
-                        <img src={INITIAL_CUSTOMERS[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
-                        <div>
-                          <div className="text-[11px] font-bold text-slate-700">Fidelis Emus (Customer)</div>
-                          <div className="text-[9px] text-slate-400">Hirer • Balance: 75,000 NGN</div>
-                        </div>
-                      </button>
-                      <button 
-                        onClick={() => handleStartBiometricFlow(INITIAL_CUSTOMERS[0])}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition"
-                        title="Biometric login for Hirer"
-                      >
-                        <Fingerprint className="w-3.5 h-3.5" />
-                      </button>
+                    <div>
+                      <input 
+                        type="email" 
+                        value={loginEmail}
+                        onChange={(e) => {
+                          setLoginEmail(e.target.value);
+                          setLoginError("");
+                        }}
+                        placeholder="Enter your email address"
+                        className="w-full p-2.5 border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
+                      />
+                      {loginError && (
+                        <p className="text-[10px] text-rose-600 font-semibold mt-1 pl-1">
+                          {loginError}
+                        </p>
+                      )}
                     </div>
+                    <button 
+                      type="submit"
+                      className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 shadow-sm cursor-pointer"
+                    >
+                      <span>Sign In with Email</span>
+                    </button>
+                  </form>
 
-                    {/* Freelancer Emeka Login Row with Biometrics */}
-                    <div className="relative">
-                      <button 
-                        onClick={() => handleQuickLogin(INITIAL_FREELANCERS[0])}
-                        className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left"
-                      >
-                        <img src={INITIAL_FREELANCERS[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
-                        <div>
-                          <div className="text-[11px] font-bold text-slate-700">Emeka Okonkwo (Plumber)</div>
-                          <div className="text-[9px] text-slate-400">Freelancer • 4.9 ★ 37 reviews</div>
+                  {/* Biometric Quick Login Area - Shown ONLY in Demo Mode */}
+                  {!config.productionMode && (
+                    <div className="space-y-2.5 text-left pt-4 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 px-1">
+                        <span>Demo Passkey Shortcuts</span>
+                        <Fingerprint className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+                      </div>
+                      
+                      {/* Customer Login Row with Biometrics */}
+                      {INITIAL_CUSTOMERS.length > 0 && (
+                        <div className="relative">
+                          <button 
+                            onClick={() => handleQuickLogin(INITIAL_CUSTOMERS[0])}
+                            className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left cursor-pointer"
+                          >
+                            <img src={INITIAL_CUSTOMERS[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
+                            <div>
+                              <div className="text-[11px] font-bold text-slate-700">Fidelis Emus (Customer)</div>
+                              <div className="text-[9px] text-slate-400">{INITIAL_CUSTOMERS[0].email}</div>
+                            </div>
+                          </button>
+                          <button 
+                            onClick={() => handleStartBiometricFlow(INITIAL_CUSTOMERS[0])}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
+                            title="Biometric login for Hirer"
+                          >
+                            <Fingerprint className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      </button>
-                      <button 
-                        onClick={() => handleStartBiometricFlow(INITIAL_FREELANCERS[0])}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition"
-                        title="Biometric login for Freelancer"
-                      >
-                        <Fingerprint className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                      )}
 
-                    {/* Freelancer Sarah Login Row with Biometrics */}
-                    <div className="relative">
-                      <button 
-                        onClick={() => handleQuickLogin(INITIAL_FREELANCERS[1])}
-                        className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left"
-                      >
-                        <img src={INITIAL_FREELANCERS[1].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
-                        <div>
-                          <div className="text-[11px] font-bold text-slate-700">Sarah Wanjiku (App Dev)</div>
-                          <div className="text-[9px] text-slate-400">Freelancer • 4.8 ★ 52 reviews</div>
+                      {/* Freelancer Emeka Login Row with Biometrics */}
+                      {INITIAL_FREELANCERS.length > 0 && (
+                        <div className="relative">
+                          <button 
+                            onClick={() => handleQuickLogin(INITIAL_FREELANCERS[0])}
+                            className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left cursor-pointer"
+                          >
+                            <img src={INITIAL_FREELANCERS[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
+                            <div>
+                              <div className="text-[11px] font-bold text-slate-700">Emeka Okonkwo (Plumber)</div>
+                              <div className="text-[9px] text-slate-400">{INITIAL_FREELANCERS[0].email}</div>
+                            </div>
+                          </button>
+                          <button 
+                            onClick={() => handleStartBiometricFlow(INITIAL_FREELANCERS[0])}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
+                            title="Biometric login for Freelancer"
+                          >
+                            <Fingerprint className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      </button>
-                      <button 
-                        onClick={() => handleStartBiometricFlow(INITIAL_FREELANCERS[1])}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition"
-                        title="Biometric login for Freelancer"
-                      >
-                        <Fingerprint className="w-3.5 h-3.5" />
-                      </button>
+                      )}
+
+                      {/* Freelancer Sarah Login Row with Biometrics */}
+                      {INITIAL_FREELANCERS.length > 1 && (
+                        <div className="relative">
+                          <button 
+                            onClick={() => handleQuickLogin(INITIAL_FREELANCERS[1])}
+                            className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left cursor-pointer"
+                          >
+                            <img src={INITIAL_FREELANCERS[1].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
+                            <div>
+                              <div className="text-[11px] font-bold text-slate-700">Sarah Wanjiku (App Dev)</div>
+                              <div className="text-[9px] text-slate-400">{INITIAL_FREELANCERS[1].email}</div>
+                            </div>
+                          </button>
+                          <button 
+                            onClick={() => handleStartBiometricFlow(INITIAL_FREELANCERS[1])}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
+                            title="Biometric login for Freelancer"
+                          >
+                            <Fingerprint className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ) : !currentUser && isRegistering ? (
@@ -975,31 +1069,131 @@ export const MobileSimulator: React.FC = () => {
                       <div className="flex flex-col space-y-4">
                         
                         {/* Header Banner */}
-                        <div className="bg-gradient-to-tr from-emerald-600 to-teal-800 text-white p-5 rounded-b-3xl relative overflow-hidden shrink-0">
-                          <div className="relative z-10">
-                            <span className="text-[10px] bg-white/20 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
-                              Verified Escrow Protection
-                            </span>
-                            <h1 className="text-lg font-black tracking-tight leading-tight mt-2.5">
-                              {config.homepageBanner}
-                            </h1>
-                            <div className="mt-4 flex bg-white/12 rounded-full border border-white/15 p-1">
-                              <Search className="w-4 h-4 text-emerald-100 ml-2.5 my-auto" />
-                              <input 
-                                type="text" 
-                                placeholder="Search Plumbers, Devs, Barbers..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full text-xs bg-transparent border-none text-white placeholder-emerald-100 focus:outline-none px-2 py-1"
-                              />
-                              {searchTerm && (
-                                <button onClick={() => setSearchTerm("")} className="text-emerald-100 hover:text-white mr-2.5">
-                                  <X className="w-4 h-4" />
-                                </button>
-                              )}
+                        {(() => {
+                          const slideshowSlides = (config.heroSlides && config.heroSlides.filter(s => s.active).length > 0)
+                            ? config.heroSlides.filter(s => s.active)
+                            : [
+                                {
+                                  id: "m-slide-1",
+                                  title: "Vetted Plumbers & AC Repairs",
+                                  subtitle: "On-demand emergency home care",
+                                  imageUrl: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&q=80"
+                                },
+                                {
+                                  id: "m-slide-2",
+                                  title: "Certified Electricians & Solar Techs",
+                                  subtitle: "Escrow protected power support",
+                                  imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&q=80"
+                                },
+                                {
+                                  id: "m-slide-3",
+                                  title: "Professional Barbers & Hairdressers",
+                                  subtitle: "Elite styling directly to your home",
+                                  imageUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80"
+                                },
+                                {
+                                  id: "m-slide-4",
+                                  title: "Elite Bricklayers & Carpenters",
+                                  subtitle: "Durable craftsmanship you can trust",
+                                  imageUrl: "https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=400&q=80"
+                                },
+                                {
+                                  id: "m-slide-5",
+                                  title: "Expert Software Devs & Designers",
+                                  subtitle: "High-tier digital creators instantly",
+                                  imageUrl: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=400&q=80"
+                                }
+                              ];
+
+                          const activeSlideIdx = mobileSlideIndex % slideshowSlides.length;
+                          const activeSlide = slideshowSlides[activeSlideIdx];
+
+                          return (
+                            <div className="h-48 rounded-b-3xl relative overflow-hidden shrink-0 shadow-lg text-white">
+                              {/* Background Images with transitions */}
+                              <AnimatePresence mode="wait">
+                                <motion.div
+                                  key={activeSlide.id}
+                                  initial={{ opacity: 0, scale: 1.05 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.4 }}
+                                  className="absolute inset-0"
+                                >
+                                  <img 
+                                    src={activeSlide.imageUrl} 
+                                    alt={activeSlide.title} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {/* Deep custom gradient overlay */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-black/35"></div>
+                                </motion.div>
+                              </AnimatePresence>
+
+                              {/* Manual Controls */}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMobileSlideIndex(prev => (prev - 1 + slideshowSlides.length) % slideshowSlides.length);
+                                }}
+                                className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition z-20"
+                                aria-label="Previous slide"
+                              >
+                                <ArrowLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMobileSlideIndex(prev => (prev + 1) % slideshowSlides.length);
+                                }}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition z-20"
+                                aria-label="Next slide"
+                              >
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Slide Content Overlay */}
+                              <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
+                                <div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[8px] bg-emerald-600/90 text-white px-2 py-0.5 rounded-full font-extrabold uppercase tracking-widest border border-emerald-500/30">
+                                      {activeSlide.subtitle}
+                                    </span>
+                                    {/* Active indicators (dots) */}
+                                    <div className="flex space-x-1">
+                                      {slideshowSlides.map((_, dotIdx) => (
+                                        <div 
+                                          key={dotIdx} 
+                                          className={`h-1 rounded-full transition-all duration-300 ${dotIdx === activeSlideIdx ? "w-3.5 bg-emerald-400" : "w-1 bg-white/40"}`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <h1 className="text-sm font-black tracking-tight leading-tight mt-1.5 drop-shadow-sm line-clamp-2 pr-4">
+                                    {activeSlide.title}
+                                  </h1>
+                                </div>
+
+                                {/* Integrated Search */}
+                                <div className="flex bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-1 shrink-0 shadow-sm">
+                                  <Search className="w-3.5 h-3.5 text-emerald-300 ml-2 my-auto" />
+                                  <input 
+                                    type="text" 
+                                    placeholder="Search Plumbers, Devs, Barbers..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full text-[10px] bg-transparent border-none text-white placeholder-slate-300 focus:outline-none px-2 py-1 font-semibold"
+                                  />
+                                  {searchTerm && (
+                                    <button onClick={() => setSearchTerm("")} className="text-slate-300 hover:text-white mr-2">
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
+                          );
+                        })()}
 
                         {/* Category circles */}
                         <div className="px-4">
@@ -1107,6 +1301,7 @@ export const MobileSimulator: React.FC = () => {
                                     // Match category and open booking with the best freelancer
                                     const provider = filteredFreelancers[0] || freelancers[0];
                                     setSelectedFreelancer(provider);
+                                    setCheckoutStage("details");
                                     setShowBookingDialog(true);
                                   }}
                                   className="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg"
@@ -2453,6 +2648,7 @@ export const MobileSimulator: React.FC = () => {
                   // Pre-fill
                   setBookingTitle(`Urgent ${selectedFreelancer.servicesOffered?.[0] || "Services"}`);
                   setBookingDesc(`General task request for ${selectedFreelancer.servicesOffered?.[0]}.`);
+                  setCheckoutStage("details");
                   setShowBookingDialog(true);
                 }}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/10 transition"
@@ -2464,94 +2660,302 @@ export const MobileSimulator: React.FC = () => {
         </div>
       )}
 
-      {/* 2. CHOOSE GIG BOOKING TYPE SHEET */}
-      {showBookingDialog && selectedFreelancer && (
-        <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end p-3 rounded-[38px] overflow-hidden">
-          <div className="bg-white rounded-3xl p-5 space-y-4 max-h-[92%] overflow-y-auto">
-            <div className="flex justify-between items-center">
-              <h4 className="text-sm font-bold text-slate-800">Gig Order Setup</h4>
-              <button 
-                onClick={() => setShowBookingDialog(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* 2. CHOOSE GIG BOOKING TYPE SHEET (TWO-STAGE CHECKOUT) */}
+      {showBookingDialog && selectedFreelancer && (() => {
+        const basePrice = selectedFreelancer.price || 0;
+        const emergencyLevy = bookingType === "emergency" ? Math.floor(basePrice * 0.5) : 0;
+        const subtotal = basePrice + emergencyLevy;
 
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1 font-bold uppercase text-[9px]">Select Booking Type</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(["instant", "scheduled", "emergency"] as const).map(type => (
-                    <button
-                       key={type}
-                       onClick={() => setBookingType(type)}
-                       className={`p-2 rounded-xl border text-[10px] font-bold uppercase transition ${
-                        bookingType === type 
-                          ? "bg-emerald-600 border-emerald-600 text-white" 
-                          : "bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100"
-                      }`}
+        // Platform Fee Calculation
+        let platformFee = 0;
+        const feeType = config.platformFeeType || "percentage";
+        if (feeType === "fixed") {
+          platformFee = config.platformFeeFixedValue !== undefined ? config.platformFeeFixedValue : 500;
+        } else if (feeType === "percentage") {
+          platformFee = Math.floor(subtotal * ((config.platformFeePercentValue !== undefined ? config.platformFeePercentValue : 15) / 100));
+        } else if (feeType === "hybrid") {
+          const fixed = config.platformFeeFixedValue !== undefined ? config.platformFeeFixedValue : 500;
+          const percent = Math.floor(subtotal * ((config.platformFeePercentValue !== undefined ? config.platformFeePercentValue : 15) / 100));
+          platformFee = fixed + percent;
+        }
+
+        // Tax Calculation
+        let taxAmount = 0;
+        if (config.taxEnabled) {
+          const taxType = config.taxType || "percentage";
+          if (taxType === "fixed") {
+            taxAmount = config.taxValue !== undefined ? config.taxValue : 100;
+          } else {
+            taxAmount = Math.floor(subtotal * ((config.taxValue !== undefined ? config.taxValue : 5) / 100));
+          }
+        }
+
+        const finalTotal = subtotal + platformFee + taxAmount;
+        const hasSufficientBalance = currentUser ? (currentUser.walletBalance >= finalTotal) : false;
+
+        return (
+          <div className="absolute inset-0 bg-black/60 z-50 flex flex-col justify-end p-3 rounded-[38px] overflow-hidden">
+            <div className="bg-white rounded-3xl p-5 space-y-4 max-h-[92%] overflow-y-auto">
+              
+              {/* Header and Stage Switcher */}
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  {checkoutStage === "checkout" && (
+                    <button 
+                      onClick={() => setCheckoutStage("details")}
+                      className="p-1 hover:bg-slate-100 rounded-lg text-slate-500"
                     >
-                      {type}
+                      <ArrowLeft className="w-4 h-4" />
                     </button>
-                  ))}
+                  )}
+                  <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                    {checkoutStage === "details" ? "1. Setup Your Project" : "2. Secure Checkout"}
+                  </h4>
                 </div>
+                <button 
+                  onClick={() => setShowBookingDialog(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              {bookingType === "scheduled" && (
-                <div>
-                  <label className="block text-slate-400 mb-1 font-bold uppercase text-[9px]">Schedule Date & Time</label>
-                  <input 
-                    type="datetime-local"
-                    value={bookingTime}
-                    onChange={(e) => setBookingTime(e.target.value)}
-                    className="w-full p-2.5 border border-slate-100 rounded-xl bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  />
+              {checkoutStage === "details" ? (
+                /* STAGE 1: DETAILS SETTINGS */
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-slate-400 mb-1.5 font-bold uppercase text-[9px] tracking-wider">Select Booking Priority</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(["instant", "scheduled", "emergency"] as const).map(type => (
+                        <button
+                           key={type}
+                           onClick={() => setBookingType(type)}
+                           className={`p-2.5 rounded-xl border text-[9px] font-extrabold uppercase transition ${
+                            bookingType === type 
+                              ? "bg-emerald-600 border-emerald-600 text-white shadow-sm" 
+                              : "bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100"
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {bookingType === "scheduled" && (
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold uppercase text-[9px] tracking-wider">Schedule Date & Time</label>
+                      <input 
+                        type="datetime-local"
+                        value={bookingTime}
+                        onChange={(e) => setBookingTime(e.target.value)}
+                        className="w-full p-2.5 border border-slate-100 rounded-xl bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-slate-400 font-bold uppercase text-[9px] tracking-wider">Job / Request Title</label>
+                      <button
+                        type="button"
+                        onClick={handleAIAutocomplete}
+                        disabled={aiLoading}
+                        className="text-[9px] font-extrabold text-emerald-600 hover:text-emerald-700 flex items-center space-x-0.5"
+                      >
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>{aiLoading ? "Thinking..." : "AI Autocomplete"}</span>
+                      </button>
+                    </div>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Broken faucet, living room wire setup..."
+                      value={bookingTitle}
+                      onChange={(e) => setBookingTitle(e.target.value)}
+                      className="w-full p-2.5 border border-slate-100 rounded-xl bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1 font-bold uppercase text-[9px] tracking-wider">Scope & Instructions</label>
+                    <textarea 
+                      placeholder="Detail your requirements for the technician..."
+                      value={bookingDesc}
+                      onChange={(e) => setBookingDesc(e.target.value)}
+                      className="w-full p-2.5 border border-slate-100 rounded-xl bg-slate-50 h-24 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Booking type notice info box */}
+                  <div className="bg-slate-50 p-3 rounded-2xl flex items-start space-x-2 border border-slate-100">
+                    <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-extrabold text-slate-800 text-[10px]">Safe Escrow Hold Enabled</p>
+                      <p className="text-[9px] text-slate-400 leading-tight mt-0.5">Your payment is stored securely in custom escrow and is only released after work completion verification.</p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      if (!bookingTitle.trim()) {
+                        setWalletMessage({ type: "error", text: "Please provide a job title before checkout." });
+                        return;
+                      }
+                      setCheckoutStage("checkout");
+                    }}
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-600/10 transition uppercase tracking-wider flex items-center justify-center space-x-1"
+                  >
+                    <span>Proceed to Payment Checkout</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                /* STAGE 2: PAYMENTS AND COMMISSION BREAKDOWN CHECKOUT SCREEN */
+                <div className="space-y-4 text-xs">
+                  
+                  {/* Freelancer Profile Header Card */}
+                  <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl flex items-center space-x-3">
+                    <img 
+                      src={selectedFreelancer.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"} 
+                      alt={selectedFreelancer.firstName} 
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-black text-slate-800 text-xs truncate">
+                          {selectedFreelancer.firstName} {selectedFreelancer.lastName}
+                        </span>
+                        <span className="text-[8px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                          KYC Verified
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
+                        {categories.find(c => c.id === selectedFreelancer.categories?.[0])?.name || "Independent Pro"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center text-[10px] font-bold text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-lg border border-amber-100">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400 mr-1 shrink-0" />
+                        <span>{selectedFreelancer.rating || "5.0"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Breakdown Panel */}
+                  <div className="space-y-2 bg-slate-950 text-slate-300 p-4 rounded-2xl font-mono text-[10px] shadow-inner relative border border-slate-800">
+                    <div className="absolute right-3 top-3 text-[8px] text-emerald-500/80 uppercase tracking-widest font-extrabold">Breakdown</div>
+                    
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-400">Freelancer Base Rate:</span>
+                      <span className="text-white font-bold">₦{basePrice.toLocaleString()}</span>
+                    </div>
+
+                    {bookingType === "emergency" && (
+                      <div className="flex justify-between py-1 border-t border-slate-900">
+                        <span className="text-rose-400 font-bold">Emergency Priority Charge (+50%):</span>
+                        <span className="text-rose-400 font-bold">+₦{emergencyLevy.toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between py-1 border-t border-slate-900 text-white font-bold">
+                      <span className="text-slate-300">Service Subtotal:</span>
+                      <span>₦{subtotal.toLocaleString()}</span>
+                    </div>
+
+                    {/* Platform Escrow Fee (Commission) Row */}
+                    <div className="flex justify-between py-1 border-t border-slate-900">
+                      <span className="text-slate-400 flex items-center">
+                        Platform Comm. ({config.platformFeeType || "percentage"}):
+                      </span>
+                      <span className="text-emerald-400 font-bold">+₦{platformFee.toLocaleString()}</span>
+                    </div>
+
+                    {/* Tax Row */}
+                    {config.taxEnabled && (
+                      <div className="flex justify-between py-1 border-t border-slate-900">
+                        <span className="text-slate-400">
+                          Government VAT ({config.taxType === "fixed" ? "Fixed" : `${config.taxValue || 5}%`}):
+                        </span>
+                        <span className="text-emerald-400 font-bold">+₦{taxAmount.toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    {/* Grand Total Escrow Lock */}
+                    <div className="flex justify-between pt-2.5 mt-1 border-t-2 border-dashed border-slate-800 text-xs font-bold text-white font-sans">
+                      <span className="text-slate-300 uppercase tracking-wider">Total Lock-in Escrow:</span>
+                      <span className="text-emerald-400 font-black text-sm">₦{finalTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Wallet Check & Funding Selector */}
+                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                    <div className="flex justify-between items-center text-[10px]">
+                      <span className="font-bold text-slate-500 uppercase tracking-wider">Your Escrow Wallet Balance:</span>
+                      <span className={`font-mono font-bold ${hasSufficientBalance ? "text-emerald-600" : "text-rose-500 animate-pulse"}`}>
+                        ₦{(currentUser?.walletBalance || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    
+                    {!hasSufficientBalance && (
+                      <div className="mt-2.5 p-2 bg-rose-50 border border-rose-100 rounded-xl text-rose-800 text-[9px] leading-snug flex flex-col space-y-2">
+                        <div className="flex items-start space-x-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 mt-0.5" />
+                          <span>Insufficient funds! You need an additional <strong>₦{(finalTotal - (currentUser?.walletBalance || 0)).toLocaleString()}</strong> to lock this booking in escrow.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowBookingDialog(false);
+                            setActiveTab("wallet");
+                            setDepositAmount(Math.ceil(finalTotal - (currentUser?.walletBalance || 0)).toString());
+                          }}
+                          className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-lg text-center transition tracking-wider uppercase"
+                        >
+                          Top Up ₦{Math.ceil(finalTotal - (currentUser?.walletBalance || 0)).toLocaleString()} Instantly
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SafeEscrow Guarantee badge */}
+                  <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start space-x-2.5">
+                    <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
+                    <div>
+                      <p className="font-bold text-emerald-950 text-[10px]">FreelanceHub SafeEscrow™ Protected</p>
+                      <p className="text-[9px] text-emerald-800 leading-snug mt-0.5">
+                        These funds are locked securely and cannot be accessed by the freelancer until you inspect and authorize release. You have full refund rights in case of dispute.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action row */}
+                  <div className="grid grid-cols-2 gap-2 pt-1.5">
+                    <button
+                      onClick={() => setCheckoutStage("details")}
+                      className="py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold text-[10px] rounded-xl transition uppercase tracking-wider"
+                    >
+                      Back to Setup
+                    </button>
+                    <button
+                      onClick={handleConfirmBooking}
+                      disabled={!hasSufficientBalance}
+                      className={`py-3 text-white font-black text-[10px] rounded-xl transition shadow-lg uppercase tracking-wider ${
+                        hasSufficientBalance 
+                          ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/15" 
+                          : "bg-slate-300 cursor-not-allowed shadow-none"
+                      }`}
+                    >
+                      Authorize & Book
+                    </button>
+                  </div>
+
                 </div>
               )}
 
-              <div>
-                <label className="block text-slate-400 mb-1 font-bold uppercase text-[9px]">Job Title</label>
-                <input 
-                  type="text"
-                  placeholder="Kitchen pipe leak / Website fix"
-                  value={bookingTitle}
-                  onChange={(e) => setBookingTitle(e.target.value)}
-                  className="w-full p-2.5 border border-slate-100 rounded-xl bg-slate-50 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1 font-bold uppercase text-[9px]">Scope / Requirements</label>
-                <textarea 
-                  placeholder="Briefly explain the issue for the provider..."
-                  value={bookingDesc}
-                  onChange={(e) => setBookingDesc(e.target.value)}
-                  className="w-full p-2.5 border border-slate-100 rounded-xl bg-slate-50 h-20 text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-
-              <div className="bg-emerald-50/60 p-3 rounded-2xl space-y-1 font-medium text-slate-700">
-                <div className="flex justify-between"><span>Base Rate:</span> <span className="font-bold">{selectedFreelancer.price.toLocaleString()} NGN</span></div>
-                {bookingType === "emergency" && (
-                  <div className="flex justify-between text-rose-600"><span>Emergency Levy (+50%):</span> <span className="font-bold">+{(selectedFreelancer.price * 0.5).toLocaleString()} NGN</span></div>
-                )}
-                <div className="flex justify-between border-t border-emerald-100 pt-1.5 font-bold text-emerald-800 text-xs">
-                  <span>Secure Escrow Total:</span> 
-                  <span>{(selectedFreelancer.price * (bookingType === "emergency" ? 1.5 : 1)).toLocaleString()} NGN</span>
-                </div>
-              </div>
-
-              <button 
-                onClick={handleConfirmBooking}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/15 transition"
-              >
-                Approve Payment & Lock Escrow
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 3. SIMULATED ACTIVE VOICE/VIDEO CALL CONSOLE */}
       {showCallScreen && (

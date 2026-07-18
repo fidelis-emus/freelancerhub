@@ -15,12 +15,17 @@ export const AdminCMS: React.FC = () => {
   const { 
     freelancers, customers, categories, bookings, disputes, transactions, 
     updateUserStatus, resolveDispute, addCategory, updateCategory, deleteCategory,
-    config, updateConfig, resetConfig, getAIProfileAudit, getAIPricingSuggestion
+    config, updateConfig, resetConfig, getAIProfileAudit, getAIPricingSuggestion,
+    clearDemoData
   } = useApp();
 
   const [currentTab, setCurrentTab] = useState<"dashboard" | "users" | "categories" | "disputes" | "financials" | "cms" | "ai_sandbox">("dashboard");
   const [selectedUserForAudit, setSelectedUserForAudit] = useState<User | null>(null);
   
+  // Save Feedback states
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string>("");
+
   // AI Sandbox Playground States
   const [sandboxProfile, setSandboxProfile] = useState<any>({
     firstName: "Amara",
@@ -57,6 +62,19 @@ export const AdminCMS: React.FC = () => {
   const [bankName, setBankName] = useState(config.bankDetails.bankName);
   const [accountNumber, setAccountNumber] = useState(config.bankDetails.accountNumber);
   const [accountName, setAccountName] = useState(config.bankDetails.accountName);
+
+  // Advanced Financial CMS States
+  const [feeType, setFeeType] = useState<"fixed" | "percentage" | "hybrid">(config.platformFeeType || "percentage");
+  const [feeFixedValue, setFeeFixedValue] = useState<number>(config.platformFeeFixedValue !== undefined ? config.platformFeeFixedValue : 500);
+  const [feePercentValue, setFeePercentValue] = useState<number>(config.platformFeePercentValue !== undefined ? config.platformFeePercentValue : 15);
+  const [taxEnabled, setTaxEnabled] = useState<boolean>(config.taxEnabled || false);
+  const [taxType, setTaxType] = useState<"percentage" | "fixed">(config.taxType || "percentage");
+  const [taxValue, setTaxValue] = useState<number>(config.taxValue !== undefined ? config.taxValue : 7.5);
+
+  // Slideshow States
+  const [newSlideTitle, setNewSlideTitle] = useState("");
+  const [newSlideSubtitle, setNewSlideSubtitle] = useState("");
+  const [newSlideImage, setNewSlideImage] = useState("");
   
   // App Config Settings form
   const [appName, setAppName] = useState(config.appName);
@@ -64,6 +82,26 @@ export const AdminCMS: React.FC = () => {
   const [about, setAbout] = useState(config.aboutUs);
   const [email, setEmail] = useState(config.contactEmail);
   const [phone, setPhone] = useState(config.contactPhone);
+
+  // Synchronize component state when config is reloaded or updated
+  useEffect(() => {
+    setCommission(config.platformCommission);
+    setCharge(config.withdrawalCharge);
+    setBankName(config.bankDetails.bankName);
+    setAccountNumber(config.bankDetails.accountNumber);
+    setAccountName(config.bankDetails.accountName);
+    setAppName(config.appName);
+    setBanner(config.homepageBanner);
+    setAbout(config.aboutUs);
+    setEmail(config.contactEmail);
+    setPhone(config.contactPhone);
+    setFeeType(config.platformFeeType || "percentage");
+    setFeeFixedValue(config.platformFeeFixedValue !== undefined ? config.platformFeeFixedValue : 500);
+    setFeePercentValue(config.platformFeePercentValue !== undefined ? config.platformFeePercentValue : 15);
+    setTaxEnabled(config.taxEnabled || false);
+    setTaxType(config.taxType || "percentage");
+    setTaxValue(config.taxValue !== undefined ? config.taxValue : 7.5);
+  }, [config]);
 
   // Summary Metrics
   const totalUsers = freelancers.length + customers.length;
@@ -152,8 +190,17 @@ export const AdminCMS: React.FC = () => {
         bankName,
         accountNumber,
         accountName
-      }
+      },
+      platformFeeType: feeType,
+      platformFeeFixedValue: feeFixedValue,
+      platformFeePercentValue: feeType === "percentage" || feeType === "hybrid" ? commission : feePercentValue,
+      taxEnabled,
+      taxType,
+      taxValue
     }));
+    setSaveSuccess(true);
+    setSaveMessage("Escrow routing and platform commission fees updated successfully!");
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   // Save general CMS content
@@ -166,6 +213,36 @@ export const AdminCMS: React.FC = () => {
       contactEmail: email,
       contactPhone: phone
     }));
+    setSaveSuccess(true);
+    setSaveMessage("Branding and general contact configuration published successfully!");
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleAddSlide = () => {
+    if (!newSlideTitle.trim() || !newSlideImage) {
+      setSaveSuccess(true);
+      setSaveMessage("Slide title and image are required!");
+      setTimeout(() => setSaveSuccess(false), 3000);
+      return;
+    }
+    const newSlide = {
+      id: `slide-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      title: newSlideTitle,
+      subtitle: newSlideSubtitle,
+      imageUrl: newSlideImage,
+      active: true,
+      displayOrder: (config.heroSlides || []).length + 1
+    };
+    updateConfig(prev => ({
+      ...prev,
+      heroSlides: [...(prev.heroSlides || []), newSlide]
+    }));
+    setNewSlideTitle("");
+    setNewSlideSubtitle("");
+    setNewSlideImage("");
+    setSaveSuccess(true);
+    setSaveMessage("New slide added successfully!");
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   return (
@@ -202,6 +279,13 @@ export const AdminCMS: React.FC = () => {
       </div>
 
       {/* ================= ADMIN TAB CONTENT SWITCHER ================= */}
+      
+      {saveSuccess && (
+        <div id="cms-save-notification" className="mb-6 p-4 bg-emerald-600 border border-emerald-700 text-white font-bold rounded-2xl flex items-center space-x-2.5 shadow-md shadow-emerald-600/10 text-xs transition duration-300 animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-5 h-5 text-emerald-100 shrink-0" />
+          <span>{saveMessage || "Changes applied successfully!"}</span>
+        </div>
+      )}
       
       {/* TAB 1: EXECUTIVE ANALYTICAL DASHBOARD */}
       {currentTab === "dashboard" && (
@@ -637,7 +721,7 @@ export const AdminCMS: React.FC = () => {
 
       {/* TAB 5: FINANCIAL COMMISSIONS & CHARGES CONFIGS */}
       {currentTab === "financials" && (
-        <div className="max-w-xl space-y-6">
+        <div className="max-w-2xl space-y-6">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
             Escrow Settings and Bank Routing
           </h3>
@@ -650,7 +734,7 @@ export const AdminCMS: React.FC = () => {
                   type="number"
                   value={commission}
                   onChange={(e) => setCommission(parseInt(e.target.value))}
-                  className="w-full p-2.5 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full p-2.5 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-bold"
                 />
               </div>
 
@@ -660,11 +744,87 @@ export const AdminCMS: React.FC = () => {
                   type="number"
                   value={charge}
                   onChange={(e) => setCharge(parseInt(e.target.value))}
-                  className="w-full p-2.5 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  className="w-full p-2.5 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 font-bold"
                 />
               </div>
             </div>
 
+            {/* Advanced Fee Rules */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <span className="text-[10px] text-emerald-700 uppercase font-bold block">Advanced Platform Fee Logic</span>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Fee Model</label>
+                  <select 
+                    value={feeType}
+                    onChange={(e) => setFeeType(e.target.value as "fixed" | "percentage" | "hybrid")}
+                    className="w-full p-2.5 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
+                  >
+                    <option value="percentage">Percentage Commission Only</option>
+                    <option value="fixed">Fixed Flat Booking Fee Only</option>
+                    <option value="hybrid">Hybrid (Fixed + Percentage)</option>
+                  </select>
+                </div>
+
+                {feeType !== "percentage" && (
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Fixed Fee (NGN)</label>
+                    <input 
+                      type="number"
+                      value={feeFixedValue}
+                      onChange={(e) => setFeeFixedValue(parseInt(e.target.value))}
+                      className="w-full p-2.5 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tax Configurations */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-emerald-700 uppercase font-bold block">Dynamic Tax/VAT Configurations</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={taxEnabled} 
+                    onChange={(e) => setTaxEnabled(e.target.checked)}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+                  <span className="ml-2 text-[10px] text-slate-500 font-semibold">Enabled</span>
+                </label>
+              </div>
+
+              {taxEnabled && (
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Tax Type</label>
+                    <select
+                      value={taxType}
+                      onChange={(e) => setTaxType(e.target.value as "percentage" | "fixed")}
+                      className="w-full p-2 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none text-xs"
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed Flat (NGN)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Tax Value</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={taxValue}
+                      onChange={(e) => setTaxValue(parseFloat(e.target.value))}
+                      className="w-full p-2 border border-slate-250 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bank routing */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
               <span className="text-[10px] text-emerald-700 uppercase font-bold block">Escrow Bank Routing Account Details</span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -703,7 +863,7 @@ export const AdminCMS: React.FC = () => {
 
             <button 
               onClick={handleSaveFinancials}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md shadow-emerald-600/10"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md shadow-emerald-600/10 cursor-pointer"
             >
               Apply Financial Rules
             </button>
@@ -772,10 +932,261 @@ export const AdminCMS: React.FC = () => {
 
             <button 
               onClick={handleSaveCMS}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md shadow-emerald-600/10"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-md shadow-emerald-600/10 cursor-pointer"
             >
               Publish and Sync to App
             </button>
+          </div>
+
+          {/* App Homepage Slideshow Manager */}
+          <div className="bg-white border border-slate-200/80 p-5 rounded-3xl space-y-4 text-xs shadow-sm">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center">
+              <Layers className="w-4 h-4 text-emerald-600 mr-2" />
+              <span>App Homepage Slideshow Manager</span>
+            </h4>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Configure sliding hero banners on the mobile homepage. You can upload custom slide images directly from your system.
+            </p>
+
+            {/* Quick action buttons */}
+            <div className="flex space-x-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  updateConfig(prev => ({
+                    ...prev,
+                    heroSlides: (prev.heroSlides || []).map(s => ({ ...s, active: false }))
+                  }));
+                  setSaveSuccess(true);
+                  setSaveMessage("All slides deactivated successfully.");
+                  setTimeout(() => setSaveSuccess(false), 3000);
+                }}
+                className="px-3 py-1.5 bg-rose-55 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition text-[10px] uppercase cursor-pointer"
+              >
+                🚫 Deactivate All Slides
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateConfig(prev => ({
+                    ...prev,
+                    heroSlides: (prev.heroSlides || []).map(s => ({ ...s, active: true }))
+                  }));
+                  setSaveSuccess(true);
+                  setSaveMessage("All slides activated successfully.");
+                  setTimeout(() => setSaveSuccess(false), 3000);
+                }}
+                className="px-3 py-1.5 bg-emerald-55 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg border border-emerald-200 transition text-[10px] uppercase cursor-pointer"
+              >
+                ✅ Activate All Slides
+              </button>
+            </div>
+
+            {/* Upload form for a new slide */}
+            <div className="border-t border-slate-100 pt-4 mt-4 space-y-3">
+              <span className="font-bold text-slate-700 text-[11px] block">Upload & Add Custom Slide</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Slide Main Title</label>
+                  <input
+                    type="text"
+                    value={newSlideTitle}
+                    onChange={(e) => setNewSlideTitle(e.target.value)}
+                    placeholder="e.g. Vetted Plumbers & AC Repairs"
+                    className="w-full p-2.5 border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none text-[11px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Slide Subtitle / Subtext</label>
+                  <input
+                    type="text"
+                    value={newSlideSubtitle}
+                    onChange={(e) => setNewSlideSubtitle(e.target.value)}
+                    placeholder="e.g. On-demand emergency home care"
+                    className="w-full p-2.5 border border-slate-200 bg-slate-50 focus:bg-white text-slate-800 rounded-xl focus:outline-none text-[11px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 font-semibold mb-1 text-[10px]">Slide Image File (Upload from System)</label>
+                <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-250">
+                  <div className="relative w-16 h-12 bg-slate-200 rounded-lg overflow-hidden shrink-0 border border-slate-300 flex items-center justify-center">
+                    {newSlideImage ? (
+                      <img src={newSlideImage} className="w-full h-full object-cover" />
+                    ) : (
+                      <FileText className="w-5 h-5 text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="cms-slide-upload"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const MAX_WIDTH = 1000;
+                              const MAX_HEIGHT = 600;
+                              let width = img.width;
+                              let height = img.height;
+
+                              if (width > height) {
+                                if (width > MAX_WIDTH) {
+                                  height *= MAX_WIDTH / width;
+                                  width = MAX_WIDTH;
+                                }
+                              } else {
+                                if (height > MAX_HEIGHT) {
+                                  width *= MAX_HEIGHT / height;
+                                  height = MAX_HEIGHT;
+                                }
+                              }
+
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext('2d');
+                              if (ctx) {
+                                ctx.drawImage(img, 0, 0, width, height);
+                                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality JPEG is extremely light and looks great
+                                setNewSlideImage(compressedDataUrl);
+                              } else {
+                                setNewSlideImage(event.target?.result as string);
+                              }
+                            };
+                            img.src = event.target?.result as string;
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="cms-slide-upload"
+                      className="inline-block px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg cursor-pointer transition shadow-sm uppercase tracking-wider"
+                    >
+                      Choose Local Image
+                    </label>
+                    <span className="text-[9px] text-slate-400 block mt-1">Accepts PNG, JPG, WebP. Converted to secure base64.</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddSlide}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-[10px] uppercase shadow-sm mt-1 cursor-pointer"
+              >
+                Add Slide To Homepage
+              </button>
+            </div>
+
+            {/* List of current slides */}
+            <div className="border-t border-slate-100 pt-4 mt-4 space-y-2">
+              <span className="font-bold text-slate-700 text-[11px] block mb-2">Current Slide Inventory (Total: {(config.heroSlides || []).length})</span>
+              <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                {(config.heroSlides || []).map((slide) => (
+                  <div key={slide.id} className="p-3 bg-slate-50 border border-slate-200/85 rounded-2xl flex items-center justify-between space-x-3 hover:bg-slate-100/55 transition text-xs">
+                    <img src={slide.imageUrl} alt={slide.title} className="w-14 h-10 object-cover rounded-lg border border-slate-250 shadow-sm bg-slate-200 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800 text-[11px] truncate">{slide.title}</p>
+                      <p className="text-[9px] text-slate-400 truncate leading-snug">{slide.subtitle}</p>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateConfig(prev => ({
+                            ...prev,
+                            heroSlides: (prev.heroSlides || []).map(s => s.id === slide.id ? { ...s, active: !s.active } : s)
+                          }));
+                        }}
+                        className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase border transition cursor-pointer ${
+                          slide.active
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "bg-slate-200 border-slate-350 text-slate-500"
+                        }`}
+                      >
+                        {slide.active ? "Active" : "Inactive"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateConfig(prev => ({
+                            ...prev,
+                            heroSlides: (prev.heroSlides || []).filter(s => s.id !== slide.id)
+                          }));
+                          setSaveSuccess(true);
+                          setSaveMessage("Slide deleted successfully.");
+                          setTimeout(() => setSaveSuccess(false), 3000);
+                        }}
+                        className="p-1 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 rounded-lg transition cursor-pointer"
+                        title="Delete slide"
+                      >
+                        <Trash className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Marketplace Reset & Production Ready Purge */}
+          <div className="bg-rose-50 border border-rose-200/60 p-5 rounded-3xl space-y-4 text-xs shadow-sm">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-rose-800 flex items-center">
+              <ShieldAlert className="w-4 h-4 text-rose-700 mr-2 animate-pulse" />
+              <span>Marketplace Clean Production Setup</span>
+            </h4>
+            <p className="text-slate-600 text-[11px] leading-relaxed">
+              Wipe out all standard preloaded demo accounts, test gigs, simulated booking transactions, and dispute trials. This sets the database to an empty, production-ready environment so real users can register and transact.
+            </p>
+
+            <div className="bg-white p-3.5 border border-rose-100 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-rose-900 block text-[11px]">Enforce Production Mode</span>
+                  <span className="text-[9px] text-slate-400 block mt-0.5">Hides automated demo login options from the app onboarding screen.</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={config.productionMode || false} 
+                    onChange={(e) => {
+                      updateConfig(prev => ({ ...prev, productionMode: e.target.checked }));
+                      setSaveSuccess(true);
+                      setSaveMessage(e.target.checked ? "Production mode enabled! Demo accounts hidden." : "Production mode disabled. Demo shortcuts enabled.");
+                      setTimeout(() => setSaveSuccess(false), 3000);
+                    }}
+                    className="sr-only peer" 
+                  />
+                  <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex space-x-2.5">
+              <button 
+                type="button"
+                onClick={() => {
+                  if (window.confirm("Are you absolutely sure you want to permanently delete all mock users, transactions, and bookings from local storage? This action cannot be undone.")) {
+                    clearDemoData();
+                    setSaveSuccess(true);
+                    setSaveMessage("Database successfully cleared! All demo profiles purged.");
+                    setTimeout(() => setSaveSuccess(false), 3000);
+                  }
+                }}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition shadow-md shadow-rose-600/10 flex items-center space-x-1 cursor-pointer"
+              >
+                <Trash className="w-3.5 h-3.5" />
+                <span>Wipe All Demo Database Data</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

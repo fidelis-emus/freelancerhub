@@ -6,6 +6,7 @@ interface AppContextType {
   config: AppConfig;
   updateConfig: (updater: (prev: AppConfig) => AppConfig) => void;
   resetConfig: () => void;
+  clearDemoData: () => void;
 
   // Active User session
   currentUser: User | null;
@@ -172,6 +173,130 @@ const INITIAL_CONFIG: AppConfig = {
   bankAccounts: [
     { id: "ba-1", bankName: "Guaranty Trust Bank (GTBank)", accountNumber: "0123456789", accountName: "FreelanceHub Africa Escrow Ltd" },
     { id: "ba-2", bankName: "Access Bank", accountNumber: "9876543210", accountName: "FreelanceHub Africa Operations" }
+  ],
+  
+  // Custom default slides and marquee configs
+  slideshowTransitionInterval: 5000,
+  slideshowTransitionEffect: "fade",
+  scrollingMarqueeSpeed: 30,
+  featuredCategoriesCount: 6,
+  apkDownloadsCount: 15420,
+  apkInstallsCount: 12108,
+  
+  heroSlides: [
+    {
+      id: "slide-1",
+      title: "Electricians At Work",
+      subtitle: "Certified high-voltage & home wiring electricians equipped with multi-meters.",
+      imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1200&auto=format&fit=crop&q=80",
+      active: true,
+      displayOrder: 1
+    },
+    {
+      id: "slide-2",
+      title: "Plumbers Repairing Pipes",
+      subtitle: "Professional emergency leak resolution, unclogging, and drainage works.",
+      imageUrl: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1200&auto=format&fit=crop&q=80",
+      active: true,
+      displayOrder: 2
+    },
+    {
+      id: "slide-3",
+      title: "Barbers Cutting Hair",
+      subtitle: "Premium home service and executive salon barbering. Haircuts & shaves.",
+      imageUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200&auto=format&fit=crop&q=80",
+      active: true,
+      displayOrder: 3
+    },
+    {
+      id: "slide-4",
+      title: "Hairdressers Styling Clients",
+      subtitle: "Locs, braids, hair coloring, and deluxe styling with absolute care.",
+      imageUrl: "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=1200&auto=format&fit=crop&q=80",
+      active: true,
+      displayOrder: 4
+    },
+    {
+      id: "slide-5",
+      title: "Architects Reviewing Plans",
+      subtitle: "Stunning 3D CAD modeling, building designs, and structural approvals.",
+      imageUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200&auto=format&fit=crop&q=80",
+      active: true,
+      displayOrder: 5
+    },
+    {
+      id: "slide-6",
+      title: "Solar Technicians Installing Panels",
+      subtitle: "Clean energy design. High-capacity solar panel, inverter & battery setup.",
+      imageUrl: "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=1200&auto=format&fit=crop&q=80",
+      active: true,
+      displayOrder: 6
+    }
+  ],
+  categoryDetails: {
+    "cat-1": {
+      imageUrl: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&auto=format&fit=crop&q=80",
+      tagline: "Vetted handymen, plumbers & electricians",
+      active: true,
+      displayOrder: 1
+    },
+    "cat-2": {
+      imageUrl: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&auto=format&fit=crop&q=80",
+      tagline: "On-demand taxi & dispatch delivery riders",
+      active: true,
+      displayOrder: 2
+    },
+    "cat-3": {
+      imageUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=600&auto=format&fit=crop&q=80",
+      tagline: "Top builders, architects & designers",
+      active: true,
+      displayOrder: 3
+    },
+    "cat-4": {
+      imageUrl: "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&auto=format&fit=crop&q=80",
+      tagline: "Salon hair styling & makeup artists",
+      active: true,
+      displayOrder: 4
+    },
+    "cat-5": {
+      imageUrl: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80",
+      tagline: "Professional software engineers & design experts",
+      active: true,
+      displayOrder: 5
+    },
+    "cat-6": {
+      imageUrl: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80",
+      tagline: "Deep sanitization & dry cleaning",
+      active: true,
+      displayOrder: 6
+    },
+    "cat-7": {
+      imageUrl: "https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=80",
+      tagline: "Top event coordinators, DJs & photographers",
+      active: true,
+      displayOrder: 7
+    },
+    "cat-8": {
+      imageUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80",
+      tagline: "Certified corporate advocates & auditors",
+      active: true,
+      displayOrder: 8
+    },
+    "cat-9": {
+      imageUrl: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=600&auto=format&fit=crop&q=80",
+      tagline: "Poultry, fishery & tractor operations",
+      active: true,
+      displayOrder: 9
+    }
+  },
+  promotionalBanners: [
+    {
+      id: "promo-1",
+      title: "Rainy Season Plumbing Promo",
+      description: "Get 15% off on all pipe leakage and roof POP fixings. Locked safely in Escrow.",
+      imageUrl: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&auto=format&fit=crop&q=80",
+      active: true
+    }
   ]
 };
 
@@ -467,13 +592,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [freelancers, setFreelancers] = useState<User[]>(() => {
+    const isCleared = localStorage.getItem("fh_db_cleared") === "true";
     const saved = localStorage.getItem("fh_freelancers");
-    return saved ? JSON.parse(saved) : INITIAL_FREELANCERS;
+    if (saved) return JSON.parse(saved);
+    return isCleared ? [] : INITIAL_FREELANCERS;
   });
 
   const [customers, setCustomers] = useState<User[]>(() => {
+    const isCleared = localStorage.getItem("fh_db_cleared") === "true";
     const saved = localStorage.getItem("fh_customers");
-    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
+    if (saved) return JSON.parse(saved);
+    return isCleared ? [] : INITIAL_CUSTOMERS;
   });
 
   const [categories, setCategories] = useState<Category[]>(() => {
@@ -482,18 +611,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [bookings, setBookings] = useState<Booking[]>(() => {
+    const isCleared = localStorage.getItem("fh_db_cleared") === "true";
     const saved = localStorage.getItem("fh_bookings");
-    return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
+    if (saved) return JSON.parse(saved);
+    return isCleared ? [] : INITIAL_BOOKINGS;
   });
 
   const [disputes, setDisputes] = useState<Dispute[]>(() => {
+    const isCleared = localStorage.getItem("fh_db_cleared") === "true";
     const saved = localStorage.getItem("fh_disputes");
-    return saved ? JSON.parse(saved) : [];
+    if (saved) return JSON.parse(saved);
+    return [];
   });
 
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const isCleared = localStorage.getItem("fh_db_cleared") === "true";
     const saved = localStorage.getItem("fh_transactions");
-    return saved ? JSON.parse(saved) : [
+    if (saved) return JSON.parse(saved);
+    return isCleared ? [] : [
       {
         id: "t-1",
         userId: "c-1",
@@ -530,8 +665,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [currentUser, setCurrentUserState] = useState<User | null>(() => {
+    const isCleared = localStorage.getItem("fh_db_cleared") === "true";
+    const configSaved = localStorage.getItem("fh_app_config");
+    const parsedConfig = configSaved ? JSON.parse(configSaved) : INITIAL_CONFIG;
+    const isProd = parsedConfig?.productionMode === true;
+
     const saved = localStorage.getItem("fh_current_user");
     if (saved) return JSON.parse(saved);
+    if (isCleared || isProd) return null;
+    
     // By default, log in the preloaded Customer Fidelis
     const defaults = INITIAL_CUSTOMERS[0];
     localStorage.setItem("fh_current_user", JSON.stringify(defaults));
@@ -597,7 +739,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetConfig = () => {
+    localStorage.removeItem("fh_db_cleared");
     setConfigState(INITIAL_CONFIG);
+  };
+
+  const clearDemoData = () => {
+    localStorage.setItem("fh_db_cleared", "true");
+    setFreelancers([]);
+    setCustomers([]);
+    setBookings([]);
+    setDisputes([]);
+    setTransactions([]);
+    
+    localStorage.removeItem("fh_freelancers");
+    localStorage.removeItem("fh_customers");
+    localStorage.removeItem("fh_bookings");
+    localStorage.removeItem("fh_disputes");
+    localStorage.removeItem("fh_transactions");
+    localStorage.removeItem("fh_current_user");
+    
+    setCurrentUser(null);
+    setUserRoleState("customer");
   };
 
   const registerUser = async (formData: any, role: "customer" | "freelancer"): Promise<User> => {
@@ -797,48 +959,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addChatMessage = (bookingId: string, message: ChatMessage) => {
+    // 1. Update state first (purely)
     setBookings(prev => prev.map(b => {
       if (b.id !== bookingId) return b;
-      const history = [...b.chatHistory, message];
-      
-      // Auto-reply simulation for demo purposes
-      let autoReplyMsg: ChatMessage | null = null;
-      if (message.senderId === b.customerId && !message.text.startsWith("[System")) {
-        const textLower = message.text.toLowerCase();
-        let replyText = "Perfect! I will update you as soon as there is progress.";
-        if (textLower.includes("where") || textLower.includes("eta")) {
-          replyText = "I'm currently en-route. The traffic is a bit tight but I should be there within 15 minutes.";
-        } else if (textLower.includes("price") || textLower.includes("charge")) {
-          replyText = `The platform price of ${b.price} NGN is correct and securely held in escrow. No worries!`;
-        } else if (textLower.includes("hello") || textLower.includes("hi")) {
-          replyText = `Hello! Thank you for booking me for ${b.subcategory}. I am getting my tools ready now.`;
-        }
-        
-        setTimeout(() => {
-          setBookings(currentBookings => currentBookings.map(item => {
-            if (item.id === bookingId) {
-              const replyId = `msg-reply-${Date.now()}`;
-              return {
-                ...item,
-                chatHistory: [...item.chatHistory, {
-                  id: replyId,
-                  senderId: b.freelancerId,
-                  text: replyText,
-                  timestamp: new Date().toISOString(),
-                  isRead: false
-                }]
-              };
-            }
-            return item;
-          }));
-        }, 1500);
-      }
-
       return {
         ...b,
-        chatHistory: history
+        chatHistory: [...b.chatHistory, message]
       };
     }));
+
+    // 2. Schedule any side-effects OUTSIDE of the state updater
+    const bookingObj = bookings.find(item => item.id === bookingId);
+    if (!bookingObj) return;
+
+    if (message.senderId === bookingObj.customerId && !message.text.startsWith("[System")) {
+      const textLower = message.text.toLowerCase();
+      let replyText = "Perfect! I will update you as soon as there is progress.";
+      if (textLower.includes("where") || textLower.includes("eta")) {
+        replyText = "I'm currently en-route. The traffic is a bit tight but I should be there within 15 minutes.";
+      } else if (textLower.includes("price") || textLower.includes("charge")) {
+        replyText = `The platform price of ${bookingObj.price} NGN is correct and securely held in escrow. No worries!`;
+      } else if (textLower.includes("hello") || textLower.includes("hi")) {
+        replyText = `Hello! Thank you for booking me for ${bookingObj.subcategory}. I am getting my tools ready now.`;
+      }
+
+      setTimeout(() => {
+        setBookings(currentBookings => currentBookings.map(item => {
+          if (item.id === bookingId) {
+            // Use unique replyId with high-entropy random suffix
+            const replyId = `msg-reply-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+            
+            // To prevent double adding of the exact same message within small windows
+            const alreadyHasReply = item.chatHistory.some(m => m.text === replyText && (Date.now() - new Date(m.timestamp).getTime()) < 3000);
+            if (alreadyHasReply) return item;
+
+            return {
+              ...item,
+              chatHistory: [...item.chatHistory, {
+                id: replyId,
+                senderId: bookingObj.freelancerId,
+                text: replyText,
+                timestamp: new Date().toISOString(),
+                isRead: false
+              }]
+            };
+          }
+          return item;
+        }));
+      }, 1500);
+    }
   };
 
   const releaseEscrow = (bookingId: string) => {
@@ -1150,6 +1319,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         config,
         updateConfig,
         resetConfig,
+        clearDemoData,
         currentUser,
         setCurrentUser,
         userRole,

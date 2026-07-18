@@ -4,7 +4,8 @@ import {
   Smartphone, Download, Search, Star, CheckCircle, ShieldCheck, 
   HelpCircle, Phone, Mail, MapPin, Menu, X, ChevronRight, ArrowRight, 
   Shield, Laptop, Compass, Trash2, Mic, Briefcase, Sprout, DollarSign, 
-  Check, Lock, Award, Users, AlertCircle, FileText, ExternalLink
+  Check, Lock, Award, Users, AlertCircle, FileText, ExternalLink,
+  ChevronDown, ChevronUp, ChevronLeft, Sliders, Play, Pause
 } from "lucide-react";
 
 interface WebsiteLandingPageProps {
@@ -23,6 +24,14 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
   const [apkDownloadState, setApkDownloadState] = useState<"idle" | "downloading" | "completed">("idle");
   const [apkProgress, setApkProgress] = useState(0);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
+
+  // Slideshow, Mega Menu, and Marquee States
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+  const [megaMenuSearch, setMegaMenuSearch] = useState("");
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isSlidePaused, setIsSlidePaused] = useState(false);
+  const [marqueeIsHovered, setMarqueeIsHovered] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
 
   // Simple Device Detection
   useEffect(() => {
@@ -44,6 +53,68 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
       setSelectedDeviceTab("android");
     }
   }, []);
+
+  // Dynamic Industry mapping helper for Mega Menu
+  const getCategoryIndustry = (catName: string): string => {
+    const name = catName.toLowerCase();
+    if (name.includes("home") || name.includes("clean") || name.includes("fumigat") || name.includes("plumb") || name.includes("electric")) {
+      return "Home Services";
+    }
+    if (name.includes("transport") || name.includes("ride") || name.includes("taxi") || name.includes("delivery") || name.includes("keke") || name.includes("dispatch")) {
+      return "Transportation";
+    }
+    if (name.includes("tech") || name.includes("code") || name.includes("develop") || name.includes("design") || name.includes("website") || name.includes("app")) {
+      return "Technology";
+    }
+    if (name.includes("beauty") || name.includes("well") || name.includes("hair") || name.includes("barber") || name.includes("spa") || name.includes("salon")) {
+      return "Beauty & Wellness";
+    }
+    if (name.includes("build") || name.includes("construct") || name.includes("architect") || name.includes("tiler") || name.includes("mason") || name.includes("carpenter")) {
+      return "Construction & Building";
+    }
+    if (name.includes("farm") || name.includes("agri") || name.includes("poultry") || name.includes("sprout")) {
+      return "Agriculture";
+    }
+    return "Business & Creative Services";
+  };
+
+  const slides = config.heroSlides || [];
+  const slideInterval = config.slideshowTransitionInterval || 5000;
+
+  // Slideshow automatic rotation
+  useEffect(() => {
+    if (slides.length <= 1 || isSlidePaused) return;
+    const interval = setInterval(() => {
+      setCurrentSlideIndex(prev => (prev + 1) % slides.length);
+    }, slideInterval);
+    return () => clearInterval(interval);
+  }, [slides.length, slideInterval, isSlidePaused]);
+
+  // Touch Swipe Handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const currentTouch = e.touches[0].clientX;
+    const diff = touchStart - currentTouch;
+
+    if (Math.abs(diff) > 50) { // minimum distance for swipe
+      if (diff > 0) {
+        // Swipe left -> Next Slide
+        setCurrentSlideIndex(prev => (prev + 1) % slides.length);
+      } else {
+        // Swipe right -> Prev Slide
+        setCurrentSlideIndex(prev => (prev - 1 + slides.length) % slides.length);
+      }
+      setTouchStart(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setTouchStart(null);
+  };
 
   // Handle Simulated APK download
   const startApkDownload = () => {
@@ -109,30 +180,144 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
   return (
     <div className="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-emerald-100 selection:text-emerald-900" id="landing-root">
       
-      {/* 1. NAVIGATION BAR */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 transition-all" id="nav-container">
+      {/* 1. NAVIGATION BAR WITH MEGA MENU & RESPONSIVE MOBILE DRAWER */}
+      <nav className="bg-white/85 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40 transition-all" id="nav-container">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
             {/* Logo */}
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} id="nav-logo">
+            <div className="flex items-center space-x-3 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} id="nav-logo">
               <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-md shadow-emerald-600/20">
                 {config.headerLogo || "FH"}
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-extrabold tracking-tight text-slate-900">{config.appName}</span>
-                <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest leading-none">Escrow Network</span>
+                <span className="text-sm font-extrabold tracking-tight text-slate-900 leading-none">{config.appName}</span>
+                <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest leading-none mt-1">Escrow Network</span>
               </div>
             </div>
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-8 text-xs font-semibold text-slate-600" id="nav-desktop-links">
-              <a href="#hero" className="hover:text-emerald-600 transition">Home</a>
-              <a href="#categories" className="hover:text-emerald-600 transition">Categories</a>
-              <a href="#find-freelancers" className="hover:text-emerald-600 transition">Find Freelancers</a>
-              <a href="#how-it-works" className="hover:text-emerald-600 transition">How It Works</a>
-              <a href="#why-choose-us" className="hover:text-emerald-600 transition">Why Us</a>
-              <a href="#faq" className="hover:text-emerald-600 transition">FAQ</a>
+              <a href="#hero" className="hover:text-emerald-600 transition font-bold">Home</a>
+              
+              {/* Category Mega Menu Hover Trigger */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setIsMegaMenuOpen(true)}
+                onMouseLeave={() => setIsMegaMenuOpen(false)}
+              >
+                <button 
+                  className="flex items-center space-x-1 hover:text-emerald-600 transition py-2 font-bold focus:outline-none"
+                  onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+                >
+                  <span>Categories</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isMegaMenuOpen ? "rotate-180 text-emerald-600" : ""}`} />
+                </button>
+
+                {/* THE CARD-STYLE MEGA MENU dropdown panel */}
+                {isMegaMenuOpen && (
+                  <div className="absolute top-full left-1/2 -translate-x-[420px] w-[880px] bg-white border border-slate-200/80 shadow-2xl rounded-3xl p-6 grid grid-cols-12 gap-6 z-50 text-left mt-1 text-xs transform origin-top transition-all duration-200">
+                    
+                    {/* Header Area inside Mega Menu with Search box */}
+                    <div className="col-span-12 flex justify-between items-center pb-3.5 border-b border-slate-100">
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">Service Category Directory</h4>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Explore certified, background-checked African local professionals and technicians</p>
+                      </div>
+                      <div className="relative w-72">
+                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                        <input 
+                          type="text"
+                          placeholder="Search categories (e.g. plumber, lawyer)..."
+                          value={megaMenuSearch}
+                          onChange={(e) => setMegaMenuSearch(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 text-[11px] font-medium text-slate-700"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Columns: Grouped Categories */}
+                    <div className="col-span-9 grid grid-cols-3 gap-5 max-h-[380px] overflow-y-auto pr-2 scrollbar-thin">
+                      {["Home Services", "Transportation", "Technology", "Beauty & Wellness", "Construction & Building", "Agriculture", "Business & Creative Services"].map(industry => {
+                        const filteredCats = categories.filter(c => 
+                          getCategoryIndustry(c.name) === industry &&
+                          (megaMenuSearch === "" || 
+                           c.name.toLowerCase().includes(megaMenuSearch.toLowerCase()) || 
+                           c.description.toLowerCase().includes(megaMenuSearch.toLowerCase()) ||
+                           c.subcategories.some(s => s.toLowerCase().includes(megaMenuSearch.toLowerCase())))
+                        );
+
+                        if (filteredCats.length === 0) return null;
+
+                        return (
+                          <div key={industry} className="space-y-3">
+                            <h5 className="font-bold text-slate-400 uppercase tracking-widest text-[9px] border-b border-slate-100 pb-1">{industry}</h5>
+                            <div className="space-y-1.5">
+                              {filteredCats.map(cat => {
+                                const details = config.categoryDetails?.[cat.id] || { tagline: cat.description };
+                                return (
+                                  <a
+                                    key={cat.id}
+                                    href="#find-freelancers"
+                                    onClick={() => {
+                                      setSelectedCatFilter(cat.id);
+                                      setIsMegaMenuOpen(false);
+                                    }}
+                                    className="group block p-2 rounded-xl hover:bg-emerald-50/70 border border-transparent hover:border-emerald-100/50 transition duration-150"
+                                  >
+                                    <div className="flex items-start space-x-2.5">
+                                      <div className="p-1.5 bg-slate-50 group-hover:bg-emerald-50 rounded-lg transition shrink-0">
+                                        {getCatIcon(cat.iconName)}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <span className="font-extrabold text-slate-800 group-hover:text-emerald-700 block transition leading-none text-[11px]">{cat.name}</span>
+                                        <span className="text-[10px] text-slate-400 group-hover:text-emerald-600 block leading-tight mt-0.5 truncate">{details.tagline || cat.description}</span>
+                                      </div>
+                                    </div>
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right column promo inside Mega Menu */}
+                    <div className="col-span-3 bg-slate-50/80 rounded-2xl p-4 flex flex-col justify-between border border-slate-100">
+                      <div className="space-y-2.5">
+                        <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-widest bg-emerald-100/50 px-2.5 py-0.5 rounded-full inline-block">Security First</span>
+                        <div className="h-24 rounded-xl overflow-hidden relative shadow-sm">
+                          <img 
+                            src="https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=300&auto=format&fit=crop&q=80" 
+                            className="w-full h-full object-cover" 
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent p-2.5 flex flex-col justify-end text-left">
+                            <span className="text-white font-extrabold text-[10px] leading-tight">Escrow System Enabled</span>
+                            <p className="text-white/80 text-[8px] leading-none mt-0.5">Funds are released only when you are happy</p>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-normal">Our Super Admin CMS controls active payments. No upfront cash leaks or project abandonment.</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setIsMegaMenuOpen(false);
+                          onLaunchApp();
+                        }}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition text-center shadow-sm"
+                      >
+                        Launch Simulator demo
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+
+              <a href="#find-freelancers" className="hover:text-emerald-600 transition font-bold">Find Freelancers</a>
+              <a href="#how-it-works" className="hover:text-emerald-600 transition font-bold">How It Works</a>
+              <a href="#why-choose-us" className="hover:text-emerald-600 transition font-bold">Why Us</a>
+              <a href="#faq" className="hover:text-emerald-600 transition font-bold">FAQ</a>
             </div>
 
             {/* Right Buttons: Call To Actions */}
@@ -151,10 +336,10 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
                 Become a Pro
               </button>
 
-              {/* Float-animated Download APK button */}
+              {/* Download APK button */}
               <button 
                 onClick={() => { setApkDownloadState("idle"); setDownloadModalOpen(true); }}
-                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center space-x-2 shadow-md shadow-slate-900/10 hover:bg-slate-800 animate-bounce-subtle cursor-pointer"
+                className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center space-x-2 shadow-md shadow-slate-900/10 hover:bg-slate-800"
                 id="nav-download-apk-btn"
               >
                 <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
@@ -170,7 +355,7 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
               </button>
             </div>
 
-            {/* Mobile menu button */}
+            {/* Mobile Menu Toggle Button */}
             <div className="md:hidden flex items-center space-x-2">
               <button
                 onClick={() => { setApkDownloadState("idle"); setDownloadModalOpen(true); }}
@@ -190,276 +375,455 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
           </div>
         </div>
 
-        {/* Mobile menu container */}
+        {/* 2. RESPONSIVE MOBILE CATEGORIES & NAVIGATION SLIDE-OUT DRAWER */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-slate-100 p-4 space-y-3 font-semibold text-xs text-slate-700" id="nav-mobile-menu">
-            <a href="#hero" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 hover:text-emerald-600">Home</a>
-            <a href="#categories" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 hover:text-emerald-600">Categories</a>
-            <a href="#find-freelancers" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 hover:text-emerald-600">Find Freelancers</a>
-            <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 hover:text-emerald-600">How It Works</a>
-            <a href="#why-choose-us" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 hover:text-emerald-600">Why Us</a>
-            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="block py-2 hover:text-emerald-600">FAQ</a>
-            <div className="border-t border-slate-50 pt-3 flex flex-col space-y-2">
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); onLaunchApp("customer"); }}
-                className="w-full py-2.5 text-center bg-slate-50 hover:bg-slate-100 rounded-xl font-bold"
-              >
-                Client Login
-              </button>
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); onLaunchApp("freelancer"); }}
-                className="w-full py-2.5 text-center text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-100"
-              >
-                Become a Freelancer
-              </button>
-              <button 
-                onClick={() => { setIsMobileMenuOpen(false); onLaunchApp(); }}
-                className="w-full py-3 text-center bg-emerald-600 text-white rounded-xl font-extrabold tracking-wide shadow-md shadow-emerald-600/10"
-              >
-                Launch App Live Demo
-              </button>
+          <div className="fixed inset-0 z-50 bg-black/50 md:hidden flex justify-end" id="nav-mobile-drawer">
+            {/* Drawer Content */}
+            <div className="w-[320px] max-w-full bg-white h-screen shadow-2xl flex flex-col animate-slide-in p-5 text-left relative overflow-hidden">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-xs">
+                    {config.headerLogo || "FH"}
+                  </div>
+                  <span className="text-xs font-bold text-slate-900">{config.appName} Drawer</span>
+                </div>
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-150 rounded-full"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Drawer Category Search box */}
+              <div className="mt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text"
+                    placeholder="Search categories..."
+                    value={megaMenuSearch}
+                    onChange={(e) => setMegaMenuSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Scrollable Categories touch-friendly grid and navigation */}
+              <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1 scrollbar-none">
+                
+                {/* Regular Navigation Links */}
+                <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-600 pb-4 border-b border-slate-100">
+                  <a href="#hero" onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-slate-50 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition">Home</a>
+                  <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-slate-50 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition">How It Works</a>
+                  <a href="#why-choose-us" onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-slate-50 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition">Why Us</a>
+                  <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-slate-50 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition">FAQ</a>
+                </div>
+
+                <div className="space-y-3">
+                  <span className="text-[9px] uppercase tracking-wider text-slate-400 font-extrabold block">Browse Industries</span>
+                  
+                  {/* Category touch targets - minimum 44px height */}
+                  <div className="grid grid-cols-1 gap-2">
+                    {categories
+                      .filter(c => megaMenuSearch === "" || c.name.toLowerCase().includes(megaMenuSearch.toLowerCase()))
+                      .map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            setSelectedCatFilter(cat.id);
+                            setIsMobileMenuOpen(false);
+                            // Scroll to freelancers
+                            const element = document.getElementById("find-freelancers");
+                            if (element) {
+                              element.scrollIntoView({ behavior: "smooth" });
+                            }
+                          }}
+                          className="w-full flex items-center space-x-3 p-3 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 rounded-xl border border-slate-100 hover:border-emerald-100 text-xs transition text-left min-h-[48px] select-none"
+                        >
+                          <div className="p-1.5 bg-white rounded-lg shrink-0">
+                            {getCatIcon(cat.iconName)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold text-slate-800 hover:text-emerald-700 block text-xs truncate leading-none">{cat.name}</span>
+                            <span className="text-[10px] text-slate-400 block truncate leading-none mt-1">Explore all specialists</span>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        </button>
+                      ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Drawer Actions */}
+              <div className="border-t border-slate-100 pt-4 flex flex-col space-y-2 mt-auto">
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); onLaunchApp("customer"); }}
+                    className="py-2.5 text-center bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold"
+                  >
+                    Client login
+                  </button>
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); onLaunchApp("freelancer"); }}
+                    className="py-2.5 text-center text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl text-xs font-bold border border-emerald-100"
+                  >
+                    Become Pro
+                  </button>
+                </div>
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); onLaunchApp(); }}
+                  className="w-full py-3 text-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold tracking-wide shadow-md shadow-emerald-600/15 transition"
+                >
+                  Launch App Simulator
+                </button>
+              </div>
+
             </div>
           </div>
         )}
       </nav>
 
-      {/* 2. HERO SECTION */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:py-24 bg-gradient-to-b from-white to-slate-50/50" id="hero">
-        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] [background-size:24px_24px] opacity-60 pointer-events-none"></div>
-        
-        {/* Abstract shapes */}
-        <div className="absolute top-20 right-[-10%] w-[450px] h-[450px] bg-emerald-400/10 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-10 left-[-5%] w-[350px] h-[350px] bg-sky-400/10 rounded-full blur-[100px] pointer-events-none"></div>
+      {/* CSS STYLES FOR THE HORIZONTAL CONTINUOUS SCROLLING MARQUEE */}
+      <style>{`
+        @keyframes marquee-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee-continuous {
+          display: flex;
+          width: max-content;
+          animation: marquee-scroll var(--speed, 35s) linear infinite;
+        }
+        .animate-marquee-continuous:hover {
+          animation-play-state: paused;
+        }
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-none {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      {/* 2. HERO SLIDESHOW SECTION */}
+      <section 
+        className="relative overflow-hidden bg-slate-950 text-white min-h-[500px] md:min-h-[580px] flex flex-col justify-center" 
+        id="hero"
+        onMouseEnter={() => setIsSlidePaused(true)}
+        onMouseLeave={() => setIsSlidePaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+      >
+        {/* Slides list */}
+        {slides.length > 0 ? (
+          slides.map((slide, idx) => {
+            if (!slide.active) return null;
+            const isCurrent = idx === currentSlideIndex;
             
-            {/* Hero Left Content */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              
-              {/* Badge */}
-              <div className="inline-flex items-center space-x-2 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-full px-3 py-1 text-[11px] font-bold tracking-tight">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>₦250 Million+ Escrow Holdings Secured Across Africa</span>
-              </div>
+            // Handle Transition Effects
+            const effect = config.slideshowTransitionEffect || "fade";
+            let transitionClass = "opacity-0 pointer-events-none";
+            if (isCurrent) {
+              transitionClass = "opacity-100 z-10";
+            }
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-none">
-                Hire Vetted Local <br />
-                <span className="text-emerald-600 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Elite Professionals</span> <br />
-                With 100% Escrow Protection.
-              </h1>
-
-              <p className="text-slate-500 text-sm sm:text-base leading-relaxed max-w-2xl">
-                {config.aboutUs || "FreelanceHub Africa secures on-demand local labor and digital talents. Clients' money is held safely in escrow and only released once they check, confirm, and approve the completed job."}
-              </p>
-
-              {/* SEARCH BOX */}
-              <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col sm:flex-row items-center gap-2 max-w-xl" id="hero-search">
-                <div className="flex-1 w-full flex items-center space-x-2 px-3">
-                  <Search className="w-5 h-5 text-slate-400 shrink-0" />
-                  <input 
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search plumbers, software devs, AC technicians, hair..."
-                    className="w-full py-2 bg-transparent text-xs text-slate-800 focus:outline-none placeholder:text-slate-400"
+            return (
+              <div 
+                key={slide.id}
+                className={`absolute inset-0 transition-all duration-[800ms] ease-in-out ${transitionClass}`}
+              >
+                {/* Backing Image with dynamic zoom effect */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <img 
+                    src={slide.imageUrl} 
+                    alt={slide.title}
+                    className={`w-full h-full object-cover transition-transform duration-[6000ms] ease-out ${
+                      isCurrent && effect === "zoom" ? "scale-110" : "scale-100"
+                    }`}
                   />
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/80 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
                 </div>
-                
-                <div className="w-full sm:w-auto flex space-x-2 shrink-0">
-                  <select 
-                    value={selectedCatFilter}
-                    onChange={(e) => setSelectedCatFilter(e.target.value)}
-                    className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  
-                  <a 
-                    href="#find-freelancers"
-                    className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-md shadow-emerald-600/10 shrink-0 justify-center w-full sm:w-auto"
-                  >
-                    <span>Find Pros</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </div>
 
-              {/* Trust Indicators */}
-              <div className="pt-4 grid grid-cols-3 gap-4 border-t border-slate-200/60 max-w-xl text-left">
-                <div>
-                  <span className="block text-2xl font-black text-slate-900 leading-none">100%</span>
-                  <span className="text-[10px] text-slate-400 font-bold tracking-tight uppercase">KYC Biometric Vetted</span>
-                </div>
-                <div>
-                  <span className="block text-2xl font-black text-slate-900 leading-none">Zero</span>
-                  <span className="text-[10px] text-slate-400 font-bold tracking-tight uppercase">Upfront Risk (Escrow)</span>
-                </div>
-                <div>
-                  <span className="block text-2xl font-black text-slate-900 leading-none">24/7</span>
-                  <span className="text-[10px] text-slate-400 font-bold tracking-tight uppercase">Active GPS Tracking</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Hero Right: Live Interactive Demo Launcher Frame */}
-            <div className="lg:col-span-5 flex justify-center" id="hero-simulator-preview">
-              <div className="relative group">
-                {/* Glow backdrops */}
-                <div className="absolute inset-0 bg-emerald-500 rounded-[48px] opacity-10 blur-xl group-hover:opacity-20 transition duration-700"></div>
-                
-                {/* Smart Phone Frame Wrapper */}
-                <div className="relative border-[10px] border-slate-900 bg-slate-900 rounded-[50px] shadow-2xl overflow-hidden max-w-[310px] aspect-[9/19] flex flex-col border-solid">
-                  
-                  {/* Notch */}
-                  <div className="absolute top-0 inset-x-0 h-5 bg-slate-900 z-30 flex justify-center items-center">
-                    <div className="w-16 h-3.5 bg-black rounded-b-xl flex justify-around items-center px-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
-                      <div className="w-6 h-1 bg-slate-800 rounded-full"></div>
+                {/* Content Overlay */}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full relative z-20 flex items-center text-left py-12">
+                  <div className="max-w-2xl space-y-5">
+                    {/* Badge */}
+                    <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full px-3 py-1 text-[11px] font-bold tracking-tight backdrop-blur-sm">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Verified African Escrow Labor Network</span>
                     </div>
-                  </div>
 
-                  {/* Simulator Screen Preview Mock */}
-                  <div className="flex-1 bg-slate-50 flex flex-col relative pt-5 p-4 justify-between text-left">
-                    <div className="space-y-4">
+                    <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none text-white">
+                      {slide.title}
+                    </h1>
+
+                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
+                      {slide.subtitle}
+                    </p>
+
+                    {/* Integrated Slideshow Search Controls */}
+                    <div className="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center gap-2 max-w-xl">
+                      <div className="flex-1 w-full flex items-center space-x-2 px-3">
+                        <Search className="w-5 h-5 text-slate-300 shrink-0" />
+                        <input 
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search plumbers, software devs, AC technicians..."
+                          className="w-full py-2 bg-transparent text-xs text-white focus:outline-none placeholder:text-slate-300 text-left"
+                        />
+                      </div>
                       
-                      {/* Status row */}
-                      <div className="flex justify-between items-center text-[8px] font-mono text-slate-400 font-bold">
-                        <span>9:41 AM</span>
-                        <div className="flex items-center space-x-1">
-                          <span>5G</span>
-                          <span>100%</span>
-                        </div>
-                      </div>
-
-                      {/* Header preview */}
-                      <div className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm">
-                        <span className="text-[9px] font-extrabold text-slate-800">FreelanceHub</span>
-                        <span className="text-[7px] bg-emerald-50 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full uppercase">Verified session</span>
-                      </div>
-
-                      {/* Card list */}
-                      <div className="space-y-2">
-                        <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Available Experts Near Lekki</span>
+                      <div className="w-full sm:w-auto flex space-x-2 shrink-0">
+                        <select 
+                          value={selectedCatFilter}
+                          onChange={(e) => setSelectedCatFilter(e.target.value)}
+                          className="px-2.5 py-2 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-slate-200 font-bold focus:outline-none"
+                        >
+                          <option value="" className="bg-slate-950 text-white">All Industries</option>
+                          {categories.map(c => (
+                            <option key={c.id} value={c.id} className="bg-slate-950 text-white">{c.name}</option>
+                          ))}
+                        </select>
                         
-                        {/* Emeka mock card */}
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-150 shadow-sm flex space-x-2">
-                          <img src="https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=100&h=100&fit=crop&q=80" className="w-8 h-8 rounded-lg object-cover" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[8px] font-bold text-slate-800">Emeka O.</span>
-                              <span className="text-[7px] text-amber-500 font-bold flex items-center">★ 4.9</span>
-                            </div>
-                            <span className="text-[7px] text-slate-400 block leading-none">Okonkwo Plumbing • 8 yrs exp</span>
-                            <span className="text-[7px] font-bold text-emerald-600 block mt-1">Starts at ₦9,000 Flat</span>
-                          </div>
-                        </div>
-
-                        {/* Sarah mock card */}
-                        <div className="bg-white p-2.5 rounded-xl border border-slate-150 shadow-sm flex space-x-2">
-                          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&q=80" className="w-8 h-8 rounded-lg object-cover" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[8px] font-bold text-slate-800">Sarah W.</span>
-                              <span className="text-[7px] text-amber-500 font-bold flex items-center">★ 4.8</span>
-                            </div>
-                            <span className="text-[7px] text-slate-400 block leading-none">Wanjiku Dev Studios • 5 yrs exp</span>
-                            <span className="text-[7px] font-bold text-emerald-600 block mt-1">Starts at ₦350,000 Flat</span>
-                          </div>
-                        </div>
+                        <a 
+                          href="#find-freelancers"
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-md justify-center w-full sm:w-auto"
+                        >
+                          <span>Discover</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </a>
                       </div>
-
                     </div>
 
-                    {/* Floating Launch trigger */}
-                    <div className="bg-gradient-to-tr from-slate-900 to-slate-950 p-3 rounded-2xl text-white text-center space-y-1.5 border border-slate-800 shadow-xl">
-                      <span className="text-[9px] font-extrabold tracking-tight block">Try Our Live App Simulator</span>
-                      <p className="text-[7px] text-slate-400 leading-tight">Test complete bookings, real-time GPS tracking, biometric KYC uploads & chat escrow releases.</p>
-                      <button 
-                        onClick={() => onLaunchApp()}
-                        className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-[8px] font-bold transition flex items-center justify-center space-x-1"
-                      >
-                        <span>Open Live Simulator</span>
-                        <ArrowRight className="w-2 h-2" />
-                      </button>
+                    {/* Quick Stats inside Slide overlay */}
+                    <div className="pt-4 grid grid-cols-3 gap-3 border-t border-white/10 max-w-lg text-left">
+                      <div>
+                        <span className="block text-xl font-black text-white leading-none">100% Secure</span>
+                        <span className="text-[9px] text-slate-400 font-bold tracking-tight uppercase">Biometric Vetted</span>
+                      </div>
+                      <div>
+                        <span className="block text-xl font-black text-white leading-none">₦0 Upfront</span>
+                        <span className="text-[9px] text-slate-400 font-bold tracking-tight uppercase">Escrow Protection</span>
+                      </div>
+                      <div>
+                        <span className="block text-xl font-black text-white leading-none">24/7 Live</span>
+                        <span className="text-[9px] text-slate-400 font-bold tracking-tight uppercase">GPS Tracking</span>
+                      </div>
                     </div>
-
                   </div>
                 </div>
-
-                {/* Aesthetic floaters */}
-                <div className="absolute top-10 left-[-30px] bg-white border border-slate-150 p-2 rounded-xl shadow-lg flex items-center space-x-1.5 animate-float">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span className="text-[9px] font-mono text-slate-600">● Escrow holds ₦12,000</span>
-                </div>
-
-                <div className="absolute bottom-12 right-[-30px] bg-white border border-slate-150 p-2.5 rounded-xl shadow-lg flex items-center space-x-2 animate-float-delayed">
-                  <div className="p-1 bg-emerald-50 text-emerald-700 rounded-lg">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-[8px] font-bold text-slate-800 block">Biometric Vetted</span>
-                    <span className="text-[7px] text-slate-400 leading-none">KYC ID Verified ✓</span>
-                  </div>
-                </div>
-
               </div>
-            </div>
+            );
+          })
+        ) : (
+          <div className="absolute inset-0 bg-slate-900 flex items-center justify-center text-slate-400">
+            No active slideshow banners configured.
+          </div>
+        )}
 
+        {/* Previous / Next Manual Navigation Arrows */}
+        {slides.length > 1 && (
+          <>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlideIndex(prev => (prev - 1 + slides.length) % slides.length);
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 bg-slate-900/40 hover:bg-emerald-600/80 text-white border border-white/10 hover:border-emerald-500 rounded-full flex items-center justify-center transition backdrop-blur-sm"
+              aria-label="Previous Slide"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentSlideIndex(prev => (prev + 1) % slides.length);
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 bg-slate-900/40 hover:bg-emerald-600/80 text-white border border-white/10 hover:border-emerald-500 rounded-full flex items-center justify-center transition backdrop-blur-sm"
+              aria-label="Next Slide"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
+        {/* Pagination Dots */}
+        {slides.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentSlideIndex(idx);
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  idx === currentSlideIndex ? "w-6 bg-emerald-500" : "w-2 bg-white/40 hover:bg-white/70"
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 3. CONTINUOUS CATEGORY MARQUEE SHOWCASE */}
+      <section className="bg-slate-900 border-y border-slate-800 py-6 overflow-hidden select-none relative" id="categories-marquee">
+        <div className="absolute left-0 inset-y-0 w-24 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute right-0 inset-y-0 w-24 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none"></div>
+        
+        <div 
+          className="relative w-full overflow-hidden"
+          onMouseEnter={() => setMarqueeIsHovered(true)}
+          onMouseLeave={() => setMarqueeIsHovered(false)}
+          onTouchStart={() => setMarqueeIsHovered(true)}
+          onTouchEnd={() => setMarqueeIsHovered(false)}
+        >
+          {/* Continuous scrolling marquee tape */}
+          <div 
+            className="animate-marquee-continuous" 
+            style={{ 
+              "--speed": `${config.scrollingMarqueeSpeed || 35}s`,
+              "animationPlayState": marqueeIsHovered ? "paused" : "running"
+            } as React.CSSProperties}
+          >
+            {/* Duplicate list to build standard seamless looping */}
+            {[
+              ...categories.filter(c => c.active), 
+              ...categories.filter(c => c.active), 
+              ...categories.filter(c => c.active)
+            ].map((cat, index) => {
+              const details = config.categoryDetails?.[cat.id] || { 
+                imageUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=300&auto=format&fit=crop&q=80",
+                tagline: cat.description
+              };
+              const count = freelancers.filter(f => f.categories?.includes(cat.id)).length;
+              
+              return (
+                <div 
+                  key={`${cat.id}-marquee-${index}`}
+                  onClick={() => {
+                    setSelectedCatFilter(cat.id);
+                    // Scroll to freelancers grid
+                    const el = document.getElementById("find-freelancers");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="w-[240px] shrink-0 bg-slate-950 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-3 mx-2.5 transition duration-300 cursor-pointer text-left flex flex-col justify-between h-40 group shadow-lg"
+                >
+                  <div className="relative h-20 rounded-xl overflow-hidden mb-2">
+                    <img 
+                      src={details.imageUrl} 
+                      alt={cat.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                    
+                    {/* Icon tag */}
+                    <div className="absolute top-2 left-2 p-1.5 bg-slate-900/90 rounded-lg border border-slate-800 text-emerald-400">
+                      {getCatIcon(cat.iconName)}
+                    </div>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-extrabold text-white text-xs block group-hover:text-emerald-400 transition leading-none truncate w-40">
+                        {cat.name}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 block truncate leading-none mt-1">
+                      {details.tagline || cat.description}
+                    </span>
+                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider block mt-1">
+                      {count * 31 + 42} Professionals Online
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* 3. POPULAR CATEGORIES */}
+      {/* 4. FEATURED INDUSTRIES GRID SECTION */}
       <section className="py-16 bg-white" id="categories">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           
-          <div className="max-w-2xl mx-auto space-y-2 mb-12">
-            <h2 className="text-xs uppercase tracking-widest text-emerald-600 font-extrabold">Service Sectors</h2>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">Explore Vetted Skill Industries</p>
-            <p className="text-xs text-slate-400">Instantly browse our certified roster of professionals background-checked to operate in your jurisdiction.</p>
+          <div className="max-w-2xl mx-auto space-y-2 mb-10 text-center">
+            <span className="text-[10px] uppercase tracking-widest text-emerald-600 font-extrabold bg-emerald-50 px-3 py-1 rounded-full">
+              Featured Sectors
+            </span>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mt-2">
+              Our Core Handymen & Digital Agencies
+            </h2>
+            <p className="text-xs text-slate-400">
+              Zero-risk recruitment. Every specialized sector is fully integrated with smart contracts and live dispute arbitration.
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-4" id="categories-grid">
-            {categories.map(cat => {
-              const count = freelancers.filter(f => f.categories?.includes(cat.id)).length;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCatFilter(cat.id);
-                    const el = document.getElementById("find-freelancers");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className={`p-4 border rounded-2xl flex flex-col items-center justify-between transition group hover:shadow-md h-32 ${
-                    selectedCatFilter === cat.id 
-                      ? "bg-emerald-50 border-emerald-500 shadow-sm" 
-                      : "bg-slate-50/50 border-slate-100 hover:border-emerald-200"
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition border ${
-                    selectedCatFilter === cat.id
-                      ? "bg-emerald-600 border-emerald-600 text-white"
-                      : "bg-white border-slate-150 text-slate-600 group-hover:border-emerald-200"
-                  }`}>
-                    {getCatIcon(cat.iconName)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="categories-grid">
+            {categories
+              .filter(c => c.active)
+              .slice(0, config.featuredCategoriesCount || 6)
+              .map(cat => {
+                const count = freelancers.filter(f => f.categories?.includes(cat.id)).length;
+                const details = config.categoryDetails?.[cat.id] || {
+                  imageUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&auto=format&fit=crop&q=80",
+                  tagline: cat.description
+                };
+
+                return (
+                  <div
+                    key={cat.id}
+                    className="group bg-slate-50 border border-slate-200/60 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-2.5 transition duration-300 flex flex-col h-[320px] text-left"
+                  >
+                    {/* Hover zoom image container */}
+                    <div className="relative h-44 overflow-hidden shrink-0">
+                      <img 
+                        src={details.imageUrl} 
+                        alt={cat.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition duration-500" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent"></div>
+                      
+                      {/* Floating Sector Badge */}
+                      <div className="absolute top-4 left-4 p-2 bg-white rounded-xl border border-slate-100 shadow-md text-emerald-600">
+                        {getCatIcon(cat.iconName)}
+                      </div>
+                    </div>
+
+                    {/* Meta section */}
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <h4 className="font-extrabold text-slate-900 text-sm">{cat.name}</h4>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                            {count} Active Pros
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                          {details.tagline || cat.description}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSelectedCatFilter(cat.id);
+                          const el = document.getElementById("find-freelancers");
+                          if (el) el.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm hover:shadow-emerald-600/10 text-center block select-none"
+                      >
+                        Explore Category
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-extrabold text-slate-800 block truncate w-20 leading-tight">
-                      {cat.name}
-                    </span>
-                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider block">
-                      {count} Pros
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
+                );
+              })}
           </div>
 
         </div>
