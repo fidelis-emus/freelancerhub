@@ -201,6 +201,8 @@ export interface AppConfig {
   // App Distribution Statistics
   apkDownloadsCount?: number;
   apkInstallsCount?: number;
+  productionMode?: boolean;
+  apkStorageProvider?: "local" | "s3" | "cloudinary" | "azure" | "gcs";
 }
 
 export interface Transaction {

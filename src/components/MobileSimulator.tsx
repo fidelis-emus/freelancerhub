@@ -22,6 +22,53 @@ export const MobileSimulator: React.FC = () => {
   const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
   const [downloadState, setDownloadState] = useState<"idle" | "generating" | "downloading" | "installed">("idle");
 
+  // Version Checking & Auto Update States
+  const [showUpdateDialog, setShowUpdateDialog] = useState<boolean>(false);
+  const [latestVersionInfo, setLatestVersionInfo] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [updateProgress, setUpdateProgress] = useState<number>(0);
+
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        const response = await fetch("/api/mobile/latest");
+        if (response.ok) {
+          const data = await response.json();
+          setLatestVersionInfo(data);
+          // Default mock version is "2.1.0". If the server has a newer version, trigger dynamic dialog
+          if (data && data.version && data.version !== "2.1.0") {
+            setShowUpdateDialog(true);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not check latest mobile version info:", err);
+      }
+    };
+    checkUpdates();
+  }, []);
+
+  const handleSimulateUpdate = () => {
+    setIsUpdating(true);
+    setUpdateProgress(0);
+    const interval = setInterval(() => {
+      setUpdateProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            setIsUpdating(false);
+            setShowUpdateDialog(false);
+            // Dynamic redirect to trigger the real APK binary download
+            if (latestVersionInfo?.downloadUrl) {
+              window.location.href = latestVersionInfo.downloadUrl;
+            }
+          }, 1000);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 150);
+  };
+
   // Biometric States
   const [showBiometricDialog, setShowBiometricDialog] = useState<boolean>(false);
   const [biometricTargetUser, setBiometricTargetUser] = useState<User | null>(null);
@@ -734,20 +781,20 @@ export const MobileSimulator: React.FC = () => {
                       </div>
                       
                       {/* Customer Login Row with Biometrics */}
-                      {INITIAL_CUSTOMERS.length > 0 && (
+                      {customers.length > 0 && (
                         <div className="relative">
                           <button 
-                            onClick={() => handleQuickLogin(INITIAL_CUSTOMERS[0])}
+                            onClick={() => handleQuickLogin(customers[0])}
                             className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left cursor-pointer"
                           >
-                            <img src={INITIAL_CUSTOMERS[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
+                            <img src={customers[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
                             <div>
-                              <div className="text-[11px] font-bold text-slate-700">Fidelis Emus (Customer)</div>
-                              <div className="text-[9px] text-slate-400">{INITIAL_CUSTOMERS[0].email}</div>
+                              <div className="text-[11px] font-bold text-slate-700">{customers[0].firstName} {customers[0].lastName} (Customer)</div>
+                              <div className="text-[9px] text-slate-400">{customers[0].email}</div>
                             </div>
                           </button>
                           <button 
-                            onClick={() => handleStartBiometricFlow(INITIAL_CUSTOMERS[0])}
+                            onClick={() => handleStartBiometricFlow(customers[0])}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
                             title="Biometric login for Hirer"
                           >
@@ -757,20 +804,20 @@ export const MobileSimulator: React.FC = () => {
                       )}
 
                       {/* Freelancer Emeka Login Row with Biometrics */}
-                      {INITIAL_FREELANCERS.length > 0 && (
+                      {freelancers.length > 0 && (
                         <div className="relative">
                           <button 
-                            onClick={() => handleQuickLogin(INITIAL_FREELANCERS[0])}
+                            onClick={() => handleQuickLogin(freelancers[0])}
                             className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left cursor-pointer"
                           >
-                            <img src={INITIAL_FREELANCERS[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
+                            <img src={freelancers[0].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
                             <div>
-                              <div className="text-[11px] font-bold text-slate-700">Emeka Okonkwo (Plumber)</div>
-                              <div className="text-[9px] text-slate-400">{INITIAL_FREELANCERS[0].email}</div>
+                              <div className="text-[11px] font-bold text-slate-700">{freelancers[0].firstName} {freelancers[0].lastName} ({freelancers[0].categories?.[0] || 'Provider'})</div>
+                              <div className="text-[9px] text-slate-400">{freelancers[0].email}</div>
                             </div>
                           </button>
                           <button 
-                            onClick={() => handleStartBiometricFlow(INITIAL_FREELANCERS[0])}
+                            onClick={() => handleStartBiometricFlow(freelancers[0])}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
                             title="Biometric login for Freelancer"
                           >
@@ -780,20 +827,20 @@ export const MobileSimulator: React.FC = () => {
                       )}
 
                       {/* Freelancer Sarah Login Row with Biometrics */}
-                      {INITIAL_FREELANCERS.length > 1 && (
+                      {freelancers.length > 1 && (
                         <div className="relative">
                           <button 
-                            onClick={() => handleQuickLogin(INITIAL_FREELANCERS[1])}
+                            onClick={() => handleQuickLogin(freelancers[1])}
                             className="w-full p-2.5 bg-slate-50 hover:bg-emerald-50/40 border border-slate-100 rounded-xl flex items-center space-x-2.5 pr-12 transition text-left cursor-pointer"
                           >
-                            <img src={INITIAL_FREELANCERS[1].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
+                            <img src={freelancers[1].avatarUrl} className="w-8 h-8 rounded-full object-cover" />
                             <div>
-                              <div className="text-[11px] font-bold text-slate-700">Sarah Wanjiku (App Dev)</div>
-                              <div className="text-[9px] text-slate-400">{INITIAL_FREELANCERS[1].email}</div>
+                              <div className="text-[11px] font-bold text-slate-700">{freelancers[1].firstName} {freelancers[1].lastName} ({freelancers[1].categories?.[0] || 'Provider'})</div>
+                              <div className="text-[9px] text-slate-400">{freelancers[1].email}</div>
                             </div>
                           </button>
                           <button 
-                            onClick={() => handleStartBiometricFlow(INITIAL_FREELANCERS[1])}
+                            onClick={() => handleStartBiometricFlow(freelancers[1])}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition cursor-pointer"
                             title="Biometric login for Freelancer"
                           >
@@ -3104,6 +3151,64 @@ export const MobileSimulator: React.FC = () => {
             >
               {biometricSuccess ? "Authorized ✓" : biometricScanning ? "Reading biometric signature..." : "Authorize with Touch ID / Face ID"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Native Mobile Update Dialog Overlay */}
+      {showUpdateDialog && latestVersionInfo && (
+        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xs z-55 flex items-center justify-center p-5 select-none animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-[280px] p-5 shadow-2xl border border-slate-100 flex flex-col space-y-4 text-center animate-in zoom-in-95 duration-150">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+              <Smartphone className="w-6 h-6 animate-bounce" />
+            </div>
+            
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-slate-800">New Version Available</h4>
+              <p className="text-[10px] text-slate-400 font-bold">Version {latestVersionInfo.version} ({latestVersionInfo.build})</p>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-2xl text-left border border-slate-100 max-h-[120px] overflow-y-auto">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">What's New:</span>
+              <div className="text-[10px] text-slate-600 leading-relaxed whitespace-pre-line font-medium">
+                {latestVersionInfo.releaseNotes || "• Minor stability updates & performance enhancements."}
+              </div>
+              {latestVersionInfo.minAndroidVersion && (
+                <div className="mt-2 text-[8px] text-slate-400">
+                  <span className="font-semibold text-slate-500">Min Compatibility:</span> {latestVersionInfo.minAndroidVersion}
+                </div>
+              )}
+            </div>
+
+            {isUpdating ? (
+              <div className="space-y-1.5 pt-2">
+                <div className="flex justify-between items-center text-[9px] font-bold text-slate-400">
+                  <span>Downloading package...</span>
+                  <span className="text-emerald-600">{updateProgress}%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-emerald-600 h-full rounded-full transition-all duration-150" style={{ width: `${updateProgress}%` }}></div>
+                </div>
+                <span className="text-[8px] text-slate-400 block">Serving directly from {config.apkStorageProvider || "Local Secure Storage"}</span>
+              </div>
+            ) : (
+              <div className="flex flex-col space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleSimulateUpdate}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-emerald-600/10 cursor-pointer"
+                >
+                  Update Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateDialog(false)}
+                  className="w-full py-2 hover:bg-slate-50 text-slate-400 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Later
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

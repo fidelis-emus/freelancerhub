@@ -78,7 +78,7 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
     return "Business & Creative Services";
   };
 
-  const slides = config.heroSlides || [];
+  const slides = (config.heroSlides || []).filter(s => s.active);
   const slideInterval = config.slideshowTransitionInterval || 5000;
 
   // Slideshow automatic rotation
@@ -117,36 +117,41 @@ export function WebsiteLandingPage({ onLaunchApp, onNavigateToAdmin }: WebsiteLa
   };
 
   // Handle Simulated APK download
-  const startApkDownload = () => {
+  const startApkDownload = async () => {
     setApkDownloadState("downloading");
     setApkProgress(0);
+
+    // Fetch the latest APK info dynamically from the backend
+    let downloadUrl = "";
+    try {
+      const response = await fetch("/api/mobile/latest");
+      if (response.ok) {
+        const data = await response.json();
+        downloadUrl = data.downloadUrl;
+      }
+    } catch (err) {
+      console.error("Failed to fetch latest APK URL:", err);
+    }
+
     const interval = setInterval(() => {
       setApkProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
           setApkDownloadState("completed");
-          // Trigger actual mock file download
-          const fileData = {
-            appName: config.appName,
-            version: config.apkVersion || "2.1.0",
-            downloadTimestamp: new Date().toISOString(),
-            status: "ready_to_install",
-            installInstructions: "On your Android device, open Settings -> Security -> Install Unknown Apps, and allow your browser. Then open this file to install."
-          };
-          const blob = new Blob([JSON.stringify(fileData, null, 2)], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
+          
+          // Trigger actual uploaded binary APK file download
+          const targetUrl = downloadUrl || "/downloads/FreelanceHub_Africa_v2.1.0.apk";
           const a = document.createElement("a");
-          a.href = url;
-          a.download = `FreelanceHub_Africa_v${config.apkVersion || "2.1.0"}.apk.json`;
+          a.href = targetUrl;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          
           return 100;
         }
         return prev + 10;
       });
-    }, 250);
+    }, 150);
   };
 
   // Filter freelancers for searching
